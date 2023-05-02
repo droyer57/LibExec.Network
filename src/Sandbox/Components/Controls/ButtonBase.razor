@@ -1,0 +1,30 @@
+@inherits DefaultComponent
+
+<button class="button @InternalClassName
+        @ClassName" onclick="@OnClick" style="@Style" disabled="@Disabled">
+    @if (ChildContent != null)
+    {
+        @ChildContent
+    }
+    else
+    {
+        @Text
+    }
+</button>
+
+@code {
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public string? Text { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    protected string InternalClassName = null!;
+}

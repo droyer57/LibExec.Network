@@ -1,0 +1,25 @@
+﻿@implements IDisposable
+
+@page "/"
+
+@inject GameManager GameManager;
+
+<DynamicComponent Type="GameManager.View"/>
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        GameManager.ViewChangedEvent += OnViewChanged;
+    }
+
+    public void Dispose()
+    {
+        GameManager.ViewChangedEvent -= OnViewChanged;
+    }
+
+    private void OnViewChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+}

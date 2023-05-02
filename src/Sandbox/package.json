@@ -1,0 +1,11 @@
+{
+  "devDependencies": {
+    "tailwindcss": "^3.3.2"
+  },
+  "scripts": {
+    "dev": "dotnet watch",
+    "css:dev": "tailwindcss -i ./Styles/app.css -o ./wwwroot/styles/app.css --watch",
+    "css:build": "tailwindcss -i ./Styles/app.css -o ./wwwroot/styles/app.css",
+    "css:prod": "tailwindcss -i ./Styles/app.css -o ./wwwroot/styles/app.css --minify"
+  }
+}
