@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibExec.Network", "LibExec.Network\LibExec.Network.csproj", "{A4BB6D96-5B05-494F-85C6-5F379815E05C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibExec.Network.SourceGenerators", "LibExec.Network.SourceGenerators\LibExec.Network.SourceGenerators.csproj", "{38E11EF7-99E3-4D6D-B651-2B14A7127138}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A4BB6D96-5B05-494F-85C6-5F379815E05C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4BB6D96-5B05-494F-85C6-5F379815E05C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4BB6D96-5B05-494F-85C6-5F379815E05C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4BB6D96-5B05-494F-85C6-5F379815E05C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38E11EF7-99E3-4D6D-B651-2B14A7127138}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38E11EF7-99E3-4D6D-B651-2B14A7127138}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38E11EF7-99E3-4D6D-B651-2B14A7127138}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38E11EF7-99E3-4D6D-B651-2B14A7127138}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
