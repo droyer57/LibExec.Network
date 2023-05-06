@@ -1,14 +1,20 @@
 @inherits DefaultComponent
 
-<button class="button @InternalClassName
-        @ClassName" onclick="@OnClick" style="@Style" disabled="@Disabled">
+<button class="button @InternalClassName @ClassName" onclick="@OnClick" style="@Style"
+        disabled="@(Disabled ?? Enabled == false)" @attributes="AdditionalAttributes">
     @if (ChildContent != null)
     {
         @ChildContent
     }
     else
     {
-        @Text
+        <div class="flex justify-between items-center">
+            @if (Icon != null)
+            {
+                <MsIcon Name="@Icon" ClassName="mr-2"/>
+            }
+            @Text
+        </div>
     }
 </button>
 
@@ -17,11 +23,20 @@
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
+
     [Parameter]
     public string? Text { get; set; }
 
     [Parameter]
-    public bool Disabled { get; set; }
+    public string? Icon { get; set; }
+
+    [Parameter]
+    public bool? Disabled { get; set; }
+
+    [Parameter]
+    public bool? Enabled { get; set; }
 
     [Parameter]
     public EventCallback<MouseEventArgs> OnClick { get; set; }

@@ -1,0 +1,23 @@
+@inherits DefaultComponent
+
+<i class="ms-Icon ms-Icon--@Name @_internalClassName @ClassName" style="@Style"></i>
+
+@code {
+
+    private string _internalClassName = null!;
+
+    protected override void OnParametersSet()
+    {
+        if (Leading == false)
+        {
+            _internalClassName = "leading-none align-top";
+        }
+    }
+
+    [Parameter]
+    public string Name { get; set; } = null!;
+
+    [Parameter]
+    public bool? Leading { get; set; } = true;
+
+}

@@ -5,7 +5,7 @@ namespace LibExec.Network.SourceGenerators.Builder;
 internal sealed class PacketClassBuilder : BuilderBase
 {
     private const string PacketFullClassName = "global::LibExec.Network.Packet";
-    
+
     internal void GenerateUsingDirectives()
     {
         AppendLine("using System.Text.Json.Serialization;");

@@ -3,19 +3,20 @@
     "Sandbox": {
       "commandName": "Project",
       "dotnetRunMessages": true,
-      "launchBrowser": true,
+      "launchBrowser": false,
       "applicationUrl": "http://localhost:5030",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "Watch Run": {
-        "commandName": "Executable",
-        "executablePath": "dotnet",
-        "commandLineArgs": "watch run",
-        "workingDirectory": "$(ProjectDir)",
-        "environmentVariables": {
-          "DOTNET_WATCH_RESTART_ON_RUDE_EDIT": "true"
-        }
+      }
+    },
+    "Watch Run": {
+      "launchBrowser": false,
+      "commandName": "Executable",
+      "executablePath": "dotnet",
+      "commandLineArgs": "watch run",
+      "workingDirectory": "$(ProjectDir)",
+      "environmentVariables": {
+        "DOTNET_WATCH_RESTART_ON_RUDE_EDIT": "true"
       }
     }
   }

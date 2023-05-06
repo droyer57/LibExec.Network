@@ -14,10 +14,8 @@ public sealed class NetworkManager
     internal readonly BiDictionary<Type> NetworkObjectTypes;
     internal readonly BiDictionary<Type> PacketTypes;
 
-    public NetworkManager(Type playerType)
+    public NetworkManager()
     {
-        PlayerType = playerType;
-
         if (Instance != null)
         {
             throw new Exception($"{nameof(NetworkManager)} can only have one instance");
@@ -27,20 +25,22 @@ public sealed class NetworkManager
         ServerManager = new ServerManager();
         ClientManager = new ClientManager();
 
-        var callingAssembly = Assembly.GetCallingAssembly();
+        var entryAssembly = Assembly.GetEntryAssembly() ?? throw new Exception("Cannot get entry assembly");
         var executingAssembly = Assembly.GetExecutingAssembly();
 
-        var networkObjetTypes = callingAssembly.GetTypes().Where(x => x.BaseType == typeof(NetworkObject)).ToArray();
+        var networkObjectTypes = entryAssembly.GetTypes().Where(x => x.BaseType == typeof(NetworkObject)).ToArray();
         var packetTypes = executingAssembly.GetTypes().Where(x => x.BaseType == typeof(Packet)).ToArray();
 
-        _networkObjectsCache = networkObjetTypes.ToDictionary(x => x, GetCreator<NetworkObject>);
-        NetworkObjectTypes = new BiDictionary<Type>(networkObjetTypes);
+        _networkObjectsCache = networkObjectTypes.ToDictionary(x => x, GetCreator<NetworkObject>);
+        NetworkObjectTypes = new BiDictionary<Type>(networkObjectTypes);
 
         _packetsCache = packetTypes.ToDictionary(x => x, GetCreator<Packet>);
         PacketTypes = new BiDictionary<Type>(packetTypes);
+
+        PlayerType = networkObjectTypes.FirstOrDefault(x => x.GetCustomAttribute<NetworkPlayerAttribute>() != null);
     }
 
-    internal Type PlayerType { get; private set; }
+    internal Type? PlayerType { get; private set; }
 
     public int Port { get; private set; } = DefaultPort;
 
@@ -49,7 +49,7 @@ public sealed class NetworkManager
 
     public static NetworkManager Instance { get; private set; } = null!;
 
-    public void StartServer(int port)
+    public void StartServer(int port = DefaultPort)
     {
         if (ServerManager.IsRunning) return;
 
@@ -57,7 +57,7 @@ public sealed class NetworkManager
         ServerManager.Start();
     }
 
-    public void StartClient(string address, int port)
+    public void StartClient(string address = LocalAddress, int port = DefaultPort)
     {
         if (ClientManager.IsRunning) return;
 

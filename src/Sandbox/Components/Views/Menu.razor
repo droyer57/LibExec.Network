@@ -1,5 +1,69 @@
-<h3>Menu</h3>
+@implements IDisposable
+
+@inject NetworkManager NetworkManager
+
+<Stack ClassName="w-fit border p-5 m-2">
+    <TextBox Placeholder="Pseudo"/>
+    <Separator ClassName="my-1"/>
+    <Stack Horizontal="true">
+        <TextBox Placeholder="Address" ClassName="grow"/>
+        <Separator ClassName="mr-1"/>
+        <TextBox Placeholder="Ip" ClassName="w-1/4"/>
+    </Stack>
+    <Separator ClassName="my-2 border-t border-gray-400"/>
+    <Stack Horizontal="true">
+        <PrimaryButton Text="Start Server" Icon="Server" ClassName="w-full" OnClick="StartServer"
+                       Disabled="IsServerStarting"/>
+        <Separator ClassName="mx-1"/>
+        <PrimaryButton Text="Start Client" Icon="ConnectContacts" ClassName="w-full" OnClick="StartClient"
+                       Disabled="IsClientStarting"/>
+    </Stack>
+    <Separator ClassName="my-1"/>
+    <DefaultButton Text="Disconnect" Icon="ReturnKey" OnClick="Disconnect"
+                   Disabled="!IsServerStarting && !IsClientStarting"/>
+</Stack>
 
 @code {
-    
+
+    private bool IsServerStarting => NetworkManager.ServerManager.ConnectionState >= ConnectionState.Starting;
+    private bool IsClientStarting => NetworkManager.ClientManager.ConnectionState >= ConnectionState.Starting;
+
+    protected override void OnInitialized()
+    {
+        NetworkManager.ServerManager.ConnectionStateChangedEvent += OnServerConnectionStateChanged;
+        NetworkManager.ClientManager.ConnectionStateChangedEvent += OnClientConnectionStateChanged;
+    }
+
+    public void Dispose()
+    {
+        NetworkManager.ServerManager.ConnectionStateChangedEvent -= OnServerConnectionStateChanged;
+        NetworkManager.ClientManager.ConnectionStateChangedEvent -= OnClientConnectionStateChanged;
+    }
+
+    private void StartServer()
+    {
+        NetworkManager.StartServer();
+    }
+
+    private void StartClient()
+    {
+        NetworkManager.StartClient();
+    }
+
+    private void Disconnect()
+    {
+        NetworkManager.StopClient();
+        NetworkManager.StopServer();
+    }
+
+    private void OnServerConnectionStateChanged(ConnectionState state)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnClientConnectionStateChanged(ConnectionState state)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
 }

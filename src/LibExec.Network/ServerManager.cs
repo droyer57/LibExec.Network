@@ -36,17 +36,20 @@ public sealed class ServerManager : ManagerBase
 
     protected override void OnPeerConnected(NetPeer peer)
     {
-        var instance = NetworkManager.CreateNetworkObject(NetworkManager.PlayerType);
-        instance.Id = _nextId++;
-        instance.Owner = peer;
-        NetworkObjects.Add(instance.Id, instance);
+        if (NetworkManager.PlayerType != null)
+        {
+            var instance = NetworkManager.CreateNetworkObject(NetworkManager.PlayerType);
+            instance.Id = _nextId++;
+            instance.Owner = peer;
+            NetworkObjects.Add(instance.Id, instance);
+            
+            SpawnToAll(instance, peer);
+        }
 
         foreach (var networkObject in NetworkObjects.Values)
         {
             Spawn(networkObject, peer);
         }
-
-        SpawnToAll(instance, peer);
     }
 
     protected override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)

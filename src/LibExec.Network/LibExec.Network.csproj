@@ -7,15 +7,16 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="LiteNetLib" Version="1.0.1.1" />
+        <PackageReference Include="LiteNetLib" Version="1.0.1.1"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\LibExec.Network.SourceGenerators\LibExec.Network.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+        <ProjectReference Include="..\LibExec.Network.SourceGenerators\LibExec.Network.SourceGenerators.csproj"
+                          OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="LibExec.Network.csproj.DotSettings" />
+        <None Remove="LibExec.Network.csproj.DotSettings"/>
     </ItemGroup>
 
 </Project>
