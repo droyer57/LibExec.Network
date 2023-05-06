@@ -1,3 +1,4 @@
+@using Sandbox.Game
 @implements IDisposable
 
 @inject NetworkManager NetworkManager
@@ -8,25 +9,33 @@
     <Stack Horizontal="true">
         <TextBox Placeholder="Address" ClassName="grow"/>
         <Separator ClassName="mr-1"/>
-        <TextBox Placeholder="Ip" ClassName="w-1/4"/>
+        <TextBox Placeholder="Port" ClassName="w-1/4"/>
     </Stack>
     <Separator ClassName="my-2 border-t border-gray-400"/>
     <Stack Horizontal="true">
         <PrimaryButton Text="Start Server" Icon="Server" ClassName="w-full" OnClick="StartServer"
-                       Disabled="IsServerStarting"/>
+                       Disabled="IsServerRunning || IsClientStarted"/>
         <Separator ClassName="mx-1"/>
         <PrimaryButton Text="Start Client" Icon="ConnectContacts" ClassName="w-full" OnClick="StartClient"
-                       Disabled="IsClientStarting"/>
+                       Disabled="IsClientRunning"/>
     </Stack>
     <Separator ClassName="my-1"/>
     <DefaultButton Text="Disconnect" Icon="ReturnKey" OnClick="Disconnect"
-                   Disabled="!IsServerStarting && !IsClientStarting"/>
+                   Enabled="IsServerRunning || IsClientRunning"/>
+</Stack>
+
+<Stack Horizontal="true">
+    @foreach (var item in NetworkManager.GetNetworkObjects<Player>())
+    {
+        <p class="p-3 border w-fit m-2">@item.Id</p>
+    }
 </Stack>
 
 @code {
 
-    private bool IsServerStarting => NetworkManager.ServerManager.ConnectionState >= ConnectionState.Starting;
-    private bool IsClientStarting => NetworkManager.ClientManager.ConnectionState >= ConnectionState.Starting;
+    private bool IsServerRunning => NetworkManager.ServerManager.IsRunning;
+    private bool IsClientRunning => NetworkManager.ClientManager.IsRunning;
+    private bool IsClientStarted => NetworkManager.ClientManager.ConnectionState == ConnectionState.Started;
 
     protected override void OnInitialized()
     {

@@ -42,7 +42,7 @@ public sealed class ServerManager : ManagerBase
             instance.Id = _nextId++;
             instance.Owner = peer;
             NetworkObjects.Add(instance.Id, instance);
-            
+
             SpawnToAll(instance, peer);
         }
 
