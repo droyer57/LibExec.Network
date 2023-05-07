@@ -82,7 +82,7 @@ internal sealed class PacketClassGenerator : IIncrementalGenerator
     {
         if (source == null) return;
 
-        var fileName = $"{source.NamespaceName}.{source.ClassName}.g.cs";
+        var fileName = $"{source.ClassName}.g.cs";
 
         var builder = new PacketClassBuilder();
         builder.GenerateUsingDirectives();

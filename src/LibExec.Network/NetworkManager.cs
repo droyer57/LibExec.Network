@@ -1,21 +1,23 @@
-﻿using System.Linq.Expressions;
-using System.Reflection;
+﻿using System.Reflection;
 
 namespace LibExec.Network;
 
 public sealed class NetworkManager
 {
+    internal const string NetworkInitClassName = "InternalNetworkInit";
     internal const string Key = "DDurBXaw8sLsYs9x";
     public const string LocalAddress = "localhost";
     public const int DefaultPort = 1995;
-    private readonly Dictionary<Type, Func<NetworkObject>> _networkObjectsCache;
-    private readonly Dictionary<Type, Func<Packet>> _packetsCache;
+    private readonly Dictionary<Type, Func<NetworkObject>> _networkObjectsCache = new();
+    private readonly Dictionary<Type, Func<Packet>> _packetsCache = new();
     internal readonly Dictionary<Type, Action<Packet>> Callbacks = new();
     internal readonly BiDictionary<Type> NetworkObjectTypes;
     internal readonly BiDictionary<Type> PacketTypes;
 
     public NetworkManager()
     {
+        // todo: helper class for reflection
+
         if (Instance != null)
         {
             throw new Exception($"{nameof(NetworkManager)} can only have one instance");
@@ -31,13 +33,14 @@ public sealed class NetworkManager
         var networkObjectTypes = entryAssembly.GetTypes().Where(x => x.BaseType == typeof(NetworkObject)).ToArray();
         var packetTypes = executingAssembly.GetTypes().Where(x => x.BaseType == typeof(Packet)).ToArray();
 
-        _networkObjectsCache = networkObjectTypes.ToDictionary(x => x, GetCreator<NetworkObject>);
         NetworkObjectTypes = new BiDictionary<Type>(networkObjectTypes);
-
-        _packetsCache = packetTypes.ToDictionary(x => x, GetCreator<Packet>);
         PacketTypes = new BiDictionary<Type>(packetTypes);
 
         PlayerType = networkObjectTypes.FirstOrDefault(x => x.GetCustomAttribute<NetworkPlayerAttribute>() != null);
+
+        Activator.CreateInstance(typeof(InternalNetworkInit), true);
+        var networkInitClassType = entryAssembly.GetTypes().First(x => x.Name == NetworkInitClassName);
+        Activator.CreateInstance(networkInitClassType, true);
     }
 
     internal Type? PlayerType { get; private set; }
@@ -48,6 +51,9 @@ public sealed class NetworkManager
     public ClientManager ClientManager { get; }
 
     public static NetworkManager Instance { get; private set; } = null!;
+
+    public event Action<NetworkObject>? SpawnNetworkEvent;
+    public event Action? DestroyNetworkEvent;
 
     public void StartServer(int? port = null)
     {
@@ -101,11 +107,6 @@ public sealed class NetworkManager
         return creator();
     }
 
-    private static Func<T> GetCreator<T>(Type type)
-    {
-        return Expression.Lambda<Func<T>>(Expression.New(type)).Compile();
-    }
-
     internal void RegisterPacket<T>(Action<T> callback) where T : Packet
     {
         Callbacks.Add(typeof(T), x => callback((T)x));
@@ -119,5 +120,25 @@ public sealed class NetworkManager
         }
 
         return ClientManager.NetworkObjects.Values.OfType<T>();
+    }
+
+    internal void InvokeSpawnNetworkEvent(NetworkObject networkObject)
+    {
+        SpawnNetworkEvent?.Invoke(networkObject);
+    }
+
+    internal void InvokeDestroyNetworkEvent()
+    {
+        DestroyNetworkEvent?.Invoke();
+    }
+
+    public void RegisterNetworkObject<T>(Func<T> creator) where T : NetworkObject
+    {
+        _networkObjectsCache.Add(typeof(T), creator);
+    }
+
+    public void RegisterPacket<T>(Func<T> creator) where T : Packet
+    {
+        _packetsCache.Add(typeof(T), creator);
     }
 }

@@ -11,8 +11,6 @@ public sealed class ClientManager : ManagerBase
     }
 
     public string Address { get; internal set; } = NetworkManager.LocalAddress;
-    public event Action<NetworkObject>? OnSpawnNetworkEvent;
-    public event Action? OnDestroyNetworkEvent;
 
     internal override void Start()
     {
@@ -47,12 +45,12 @@ public sealed class ClientManager : ManagerBase
         instance.IsOwner = packet.IsOwner;
 
         NetworkObjects.Add(instance.Id, instance);
-        OnSpawnNetworkEvent?.Invoke(instance);
+        NetworkManager.InvokeSpawnNetworkEvent(instance);
     }
 
     private void OnDestroyNetworkObject(DestroyNetworkObjectPacket packet)
     {
         NetworkObjects.Remove(packet.Id);
-        OnDestroyNetworkEvent?.Invoke();
+        NetworkManager.InvokeDestroyNetworkEvent();
     }
 }
