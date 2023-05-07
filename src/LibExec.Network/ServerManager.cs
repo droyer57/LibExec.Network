@@ -24,6 +24,8 @@ public sealed class ServerManager : ManagerBase
 
     internal override void Stop()
     {
+        if (!Manager.IsRunning) return;
+
         base.Stop();
 
         _nextId = 0;

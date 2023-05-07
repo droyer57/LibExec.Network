@@ -49,20 +49,20 @@ public sealed class NetworkManager
 
     public static NetworkManager Instance { get; private set; } = null!;
 
-    public void StartServer(int port = DefaultPort)
+    public void StartServer(int? port = null)
     {
         if (ServerManager.IsRunning) return;
 
-        Port = port;
+        Port = port ?? DefaultPort;
         ServerManager.Start();
     }
 
-    public void StartClient(string address = LocalAddress, int port = DefaultPort)
+    public void StartClient(string? address = null, int? port = null)
     {
         if (ClientManager.IsRunning) return;
 
-        ClientManager.Address = address;
-        Port = port;
+        ClientManager.Address = address ?? LocalAddress;
+        Port = port ?? DefaultPort;
         ClientManager.Start();
     }
 

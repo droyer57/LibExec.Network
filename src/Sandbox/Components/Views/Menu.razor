@@ -7,9 +7,9 @@
     <TextBox Placeholder="Pseudo"/>
     <Separator ClassName="my-1"/>
     <Stack Horizontal="true">
-        <TextBox Placeholder="Address" ClassName="grow"/>
+        <TextBox Placeholder="Address" ClassName="grow" @bind-Value="_address"/>
         <Separator ClassName="mr-1"/>
-        <TextBox Placeholder="Port" ClassName="w-1/4"/>
+        <TextBox Placeholder="Port" ClassName="w-1/4" @bind-Value="_port"/>
     </Stack>
     <Separator ClassName="my-2 border-t border-gray-400"/>
     <Stack Horizontal="true">
@@ -33,6 +33,9 @@
 
 @code {
 
+    private string _address = null!;
+    private string _port = null!;
+
     private bool IsServerRunning => NetworkManager.ServerManager.IsRunning;
     private bool IsClientRunning => NetworkManager.ClientManager.IsRunning;
     private bool IsClientStarted => NetworkManager.ClientManager.ConnectionState == ConnectionState.Started;
@@ -49,14 +52,24 @@
         NetworkManager.ClientManager.ConnectionStateChangedEvent -= OnClientConnectionStateChanged;
     }
 
+    private int? GetPort()
+    {
+        if (int.TryParse(_port, out var result))
+        {
+            return result;
+        }
+
+        return null;
+    }
+
     private void StartServer()
     {
-        NetworkManager.StartServer();
+        NetworkManager.StartServer(GetPort());
     }
 
     private void StartClient()
     {
-        NetworkManager.StartClient();
+        NetworkManager.StartClient(_address, GetPort());
     }
 
     private void Disconnect()
