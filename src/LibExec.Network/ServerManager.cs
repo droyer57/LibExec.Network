@@ -58,14 +58,7 @@ public sealed class ServerManager : ManagerBase
     {
         var res = NetworkObjects.FirstOrDefault(x => x.Value.Owner == peer).Value;
         if (res == null) return;
-        NetworkObjects.Remove(res.Id);
-
-        var packet = new DestroyNetworkObjectPacket
-        {
-            Id = res.Id
-        };
-
-        Manager.SendToAll(packet.GetData(), DeliveryMethod.ReliableOrdered, peer);
+        Destroy(res, peer);
     }
 
     private void SpawnToAll(NetworkObject networkObject, NetPeer? excludePeer = null)
@@ -86,5 +79,21 @@ public sealed class ServerManager : ManagerBase
         };
 
         peer.Send(packet.GetData(), DeliveryMethod.ReliableOrdered);
+    }
+
+    internal void SpawnWithInit(NetworkObject networkObject, NetPeer? peer = null)
+    {
+        networkObject.Id = _nextId++;
+        networkObject.Owner = peer;
+        NetworkObjects.Add(networkObject.Id, networkObject);
+        SpawnToAll(networkObject);
+    }
+
+    internal void Destroy(NetworkObject networkObject, NetPeer? exclude = null)
+    {
+        NetworkObjects.Remove(networkObject.Id);
+
+        var packet = new DestroyNetworkObjectPacket { Id = networkObject.Id };
+        Manager.SendToAll(packet.GetData(), DeliveryMethod.ReliableOrdered, exclude);
     }
 }

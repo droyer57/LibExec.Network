@@ -50,7 +50,15 @@ public sealed class ClientManager : ManagerBase
 
     private void OnDestroyNetworkObject(DestroyNetworkObjectPacket packet)
     {
+        var instance = NetworkObjects[packet.Id];
         NetworkObjects.Remove(packet.Id);
+
+        if (NetworkManager.Refs.TryGetValue(instance, out var value))
+        {
+            value.RemoveInstance();
+            NetworkManager.Refs.Remove(instance);
+        }
+
         NetworkManager.InvokeDestroyNetworkEvent();
     }
 }

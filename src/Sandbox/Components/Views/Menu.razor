@@ -25,16 +25,33 @@
 </Stack>
 
 <Stack Horizontal="true">
-    @foreach (var item in NetworkManager.GetNetworkObjects<Player>())
+    @foreach (var item in NetworkManager.Query<Player>())
     {
         <p class="p-3 border w-fit m-2">@item.Id</p>
     }
 </Stack>
 
+<Stack Horizontal="true" ClassName="ml-2">
+    <DefaultButton Text="Spawn" OnClick="Spawn"/>
+    <Separator ClassName="mx-1"/>
+    <DefaultButton Text="Destroy" OnClick="Destroy"/>
+</Stack>
+
+@if (IsClientRunning)
+{
+    <Stack>
+        @if (_entity.Instance != null)
+        {
+            <p>@_entity.Instance.Value</p>
+        }
+    </Stack>
+}
+
 @code {
 
     private string _address = null!;
     private string _port = null!;
+    private Ref<Entity> _entity = null!;
 
     private bool IsServerRunning => NetworkManager.ServerManager.IsRunning;
     private bool IsClientRunning => NetworkManager.ClientManager.IsRunning;
@@ -46,6 +63,8 @@
         NetworkManager.ClientManager.ConnectionStateChangedEvent += OnClientConnectionStateChanged;
         NetworkManager.SpawnNetworkObjectEvent += OnSpawnNetworkObjectEvent;
         NetworkManager.DestroyNetworkObjectEvent += OnDestroyNetworkObject;
+
+        _entity = NetworkManager.Query<Entity>().FirstOrDefault();
     }
 
     public void Dispose()
@@ -94,12 +113,28 @@
 
     private void OnSpawnNetworkObjectEvent(NetworkObject networkObject)
     {
+        if (networkObject is Entity entity)
+        {
+            _entity = entity;
+        }
         InvokeAsync(StateHasChanged);
     }
 
     private void OnDestroyNetworkObject()
     {
+    // NetworkObject.UpdateRef(ref _entity);
         InvokeAsync(StateHasChanged);
+    }
+
+    private void Spawn()
+    {
+        var entity = new Entity();
+        entity.Spawn();
+    }
+
+    private void Destroy()
+    {
+        _entity.Instance?.Destroy();
     }
 
 }

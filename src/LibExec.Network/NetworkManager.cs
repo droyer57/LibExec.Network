@@ -14,6 +14,8 @@ public sealed class NetworkManager
     internal readonly BiDictionary<Type> NetworkObjectTypes;
     internal readonly BiDictionary<Type> PacketTypes;
 
+    internal readonly Dictionary<NetworkObject, IRef<NetworkObject>> Refs = new();
+
     public NetworkManager()
     {
         // todo: helper class for reflection
@@ -51,6 +53,9 @@ public sealed class NetworkManager
     public ClientManager ClientManager { get; }
 
     public static NetworkManager Instance { get; private set; } = null!;
+
+    public bool IsServer => ServerManager.ConnectionState == ConnectionState.Started;
+    public bool IsClient => ClientManager.ConnectionState == ConnectionState.Started;
 
     public event Action<NetworkObject>? SpawnNetworkObjectEvent;
     public event Action? DestroyNetworkObjectEvent;
@@ -112,7 +117,7 @@ public sealed class NetworkManager
         Callbacks.Add(typeof(T), x => callback((T)x));
     }
 
-    public IEnumerable<T> GetNetworkObjects<T>() where T : NetworkObject
+    public IEnumerable<T> Query<T>() where T : NetworkObject
     {
         if (ServerManager.IsRunning)
         {
@@ -140,5 +145,13 @@ public sealed class NetworkManager
     public void RegisterPacket<T>(Func<T> creator) where T : Packet
     {
         _packetsCache.Add(typeof(T), creator);
+    }
+
+    internal void EnsureMethodCalledByServer()
+    {
+        if (!IsServer)
+        {
+            throw new Exception("This method can only be called by the server.");
+        }
     }
 }

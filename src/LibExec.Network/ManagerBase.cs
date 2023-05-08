@@ -6,7 +6,7 @@ public abstract class ManagerBase
 {
     private readonly EventBasedNetListener _listener = new();
     protected readonly NetManager Manager;
-    public readonly Dictionary<uint, NetworkObject> NetworkObjects = new();
+    internal readonly Dictionary<uint, NetworkObject> NetworkObjects = new();
     private ConnectionState _connectionState;
 
     protected ManagerBase()
