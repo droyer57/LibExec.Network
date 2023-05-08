@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Linq;
 using System.Text;
 using LibExec.Network.SourceGenerators.Builder;
 using LibExec.Network.SourceGenerators.Models;
@@ -51,7 +50,6 @@ internal sealed class NetworkInitGenerator : IIncrementalGenerator
 
     private static void Execute(SourceProductionContext context, ImmutableArray<NetworkInitDataToGenerate> source)
     {
-        var first = source.First();
         const string fileName = "InternalNetworkInit.g.cs";
 
         var builder = new NetworkInitClassBuilder();

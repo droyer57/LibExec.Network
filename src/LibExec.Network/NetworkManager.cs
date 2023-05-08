@@ -52,8 +52,8 @@ public sealed class NetworkManager
 
     public static NetworkManager Instance { get; private set; } = null!;
 
-    public event Action<NetworkObject>? SpawnNetworkEvent;
-    public event Action? DestroyNetworkEvent;
+    public event Action<NetworkObject>? SpawnNetworkObjectEvent;
+    public event Action? DestroyNetworkObjectEvent;
 
     public void StartServer(int? port = null)
     {
@@ -124,12 +124,12 @@ public sealed class NetworkManager
 
     internal void InvokeSpawnNetworkEvent(NetworkObject networkObject)
     {
-        SpawnNetworkEvent?.Invoke(networkObject);
+        SpawnNetworkObjectEvent?.Invoke(networkObject);
     }
 
     internal void InvokeDestroyNetworkEvent()
     {
-        DestroyNetworkEvent?.Invoke();
+        DestroyNetworkObjectEvent?.Invoke();
     }
 
     public void RegisterNetworkObject<T>(Func<T> creator) where T : NetworkObject

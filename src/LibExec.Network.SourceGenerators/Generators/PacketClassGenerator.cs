@@ -25,7 +25,7 @@ internal sealed class PacketClassGenerator : IIncrementalGenerator
                 (s, _) => GetSemanticTarget(s))
             .Where(x => x is not null);
 
-        context.RegisterSourceOutput(provider, Execute);
+        context.RegisterSourceOutput(provider, Execute!);
     }
 
     private static bool IsSyntaxTarget(SyntaxNode node)
@@ -78,10 +78,8 @@ internal sealed class PacketClassGenerator : IIncrementalGenerator
         return packetProperties;
     }
 
-    private static void Execute(SourceProductionContext context, PacketClassToGenerate? source)
+    private static void Execute(SourceProductionContext context, PacketClassToGenerate source)
     {
-        if (source == null) return;
-
         var fileName = $"{source.ClassName}.g.cs";
 
         var builder = new PacketClassBuilder();

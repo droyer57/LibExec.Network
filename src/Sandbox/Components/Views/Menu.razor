@@ -44,16 +44,16 @@
     {
         NetworkManager.ServerManager.ConnectionStateChangedEvent += OnServerConnectionStateChanged;
         NetworkManager.ClientManager.ConnectionStateChangedEvent += OnClientConnectionStateChanged;
-        NetworkManager.SpawnNetworkEvent += OnSpawnNetworkEvent;
-        NetworkManager.DestroyNetworkEvent += OnDestroyNetwork;
+        NetworkManager.SpawnNetworkObjectEvent += OnSpawnNetworkObjectEvent;
+        NetworkManager.DestroyNetworkObjectEvent += OnDestroyNetworkObject;
     }
 
     public void Dispose()
     {
         NetworkManager.ServerManager.ConnectionStateChangedEvent -= OnServerConnectionStateChanged;
         NetworkManager.ClientManager.ConnectionStateChangedEvent -= OnClientConnectionStateChanged;
-        NetworkManager.SpawnNetworkEvent -= OnSpawnNetworkEvent;
-        NetworkManager.DestroyNetworkEvent -= OnDestroyNetwork;
+        NetworkManager.SpawnNetworkObjectEvent -= OnSpawnNetworkObjectEvent;
+        NetworkManager.DestroyNetworkObjectEvent -= OnDestroyNetworkObject;
     }
 
     private int? GetPort()
@@ -92,12 +92,12 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private void OnSpawnNetworkEvent(NetworkObject networkObject)
+    private void OnSpawnNetworkObjectEvent(NetworkObject networkObject)
     {
         InvokeAsync(StateHasChanged);
     }
 
-    private void OnDestroyNetwork()
+    private void OnDestroyNetworkObject()
     {
         InvokeAsync(StateHasChanged);
     }
