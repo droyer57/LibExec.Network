@@ -27,7 +27,7 @@
 <Stack Horizontal="true">
     @foreach (var item in NetworkManager.Query<Player>())
     {
-        <p class="p-3 border w-fit m-2">@item.Id</p>
+        <p class="p-3 border w-fit m-2 @(item.IsOwner ? "border-red-700" : "")">@item.Id</p>
     }
 </Stack>
 
@@ -120,7 +120,7 @@
         InvokeAsync(StateHasChanged);
     }
 
-    private void OnDestroyNetworkObject()
+    private void OnDestroyNetworkObject(NetworkObject networkObject)
     {
         InvokeAsync(StateHasChanged);
     }

@@ -57,7 +57,7 @@ public sealed class NetworkManager
     public bool IsClient => ClientManager.ConnectionState == ConnectionState.Started;
 
     public event Action<NetworkObject>? SpawnNetworkObjectEvent;
-    public event Action? DestroyNetworkObjectEvent;
+    public event Action<NetworkObject>? DestroyNetworkObjectEvent;
 
     public void StartServer(int? port = null)
     {
@@ -121,16 +121,6 @@ public sealed class NetworkManager
         return NetworkObjects.Values.OfType<T>();
     }
 
-    internal void InvokeSpawnNetworkEvent(NetworkObject networkObject)
-    {
-        SpawnNetworkObjectEvent?.Invoke(networkObject);
-    }
-
-    internal void InvokeDestroyNetworkEvent()
-    {
-        DestroyNetworkObjectEvent?.Invoke();
-    }
-
     public void RegisterNetworkObject<T>(Func<T> creator) where T : NetworkObject
     {
         _networkObjectsCache.Add(typeof(T), creator);
@@ -147,5 +137,17 @@ public sealed class NetworkManager
         {
             throw new Exception("This method can only be called by the server.");
         }
+    }
+
+    internal void AddNetworkObject(NetworkObject networkObject)
+    {
+        NetworkObjects.Add(networkObject.Id, networkObject);
+        SpawnNetworkObjectEvent?.Invoke(networkObject);
+    }
+
+    internal void RemoveNetworkObject(NetworkObject networkObject)
+    {
+        NetworkObjects.Remove(networkObject.Id);
+        DestroyNetworkObjectEvent?.Invoke(networkObject);
     }
 }

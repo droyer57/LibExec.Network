@@ -38,38 +38,36 @@ public sealed class ServerManager : ManagerBase
 
     protected override void OnPeerConnected(NetPeer peer)
     {
-        if (NetworkManager.PlayerType != null)
+        if (!NetworkManager.ClientManager.IsLocalPeer(peer))
         {
-            var instance = NetworkManager.CreateNetworkObject(NetworkManager.PlayerType);
-            instance.Id = _nextId++;
-            instance.Owner = peer;
-            NetworkManager.NetworkObjects.Add(instance.Id, instance);
-            NetworkManager.InvokeSpawnNetworkEvent(instance);
-
-            SpawnToAll(instance, peer);
+            foreach (var networkObject in NetworkManager.NetworkObjects.Values)
+            {
+                Spawn(networkObject, peer);
+            }
         }
 
-        if (NetworkManager.ClientManager.IsLocalPeer(peer)) return;
+        if (NetworkManager.PlayerType == null) return;
 
-        foreach (var networkObject in NetworkManager.NetworkObjects.Values)
-        {
-            Spawn(networkObject, peer);
-        }
+        var instance = NetworkManager.CreateNetworkObject(NetworkManager.PlayerType);
+        InitNetworkObject(instance, peer);
+        NetworkManager.AddNetworkObject(instance);
+
+        SpawnToAll(instance);
     }
 
     protected override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
-        var res = NetworkManager.NetworkObjects.FirstOrDefault(x => x.Value.Owner == peer).Value;
-        if (res == null) return;
-        Destroy(res, peer);
+        var data = NetworkManager.NetworkObjects.Where(x => x.Value.Owner == peer);
+        foreach (var item in data)
+        {
+            Destroy(item.Value, peer);
+        }
     }
 
     private void SpawnToAll(NetworkObject networkObject, NetPeer? excludePeer = null)
     {
-        foreach (var peer in Manager.ConnectedPeerList.Where(peer => peer != excludePeer))
+        foreach (var peer in GetPeers(excludePeer))
         {
-            if (NetworkManager.ClientManager.IsLocalPeer(peer)) continue;
-
             Spawn(networkObject, peer);
         }
     }
@@ -88,10 +86,8 @@ public sealed class ServerManager : ManagerBase
 
     internal void SpawnWithInit(NetworkObject networkObject, NetPeer? peer = null)
     {
-        networkObject.Id = _nextId++;
-        networkObject.Owner = peer;
-        NetworkManager.NetworkObjects.Add(networkObject.Id, networkObject);
-        NetworkManager.InvokeSpawnNetworkEvent(networkObject);
+        InitNetworkObject(networkObject, peer);
+        NetworkManager.AddNetworkObject(networkObject);
         SpawnToAll(networkObject);
     }
 
@@ -99,16 +95,35 @@ public sealed class ServerManager : ManagerBase
     {
         if (!networkObject.IsValid) return;
 
-        NetworkManager.NetworkObjects.Remove(networkObject.Id);
-        NetworkManager.InvokeDestroyNetworkEvent();
+        NetworkManager.RemoveNetworkObject(networkObject);
 
         var packet = new DestroyNetworkObjectPacket { Id = networkObject.Id };
 
+        foreach (var peer in GetPeers(excludePeer))
+        {
+            peer.Send(packet.GetData(), DeliveryMethod.ReliableOrdered);
+        }
+    }
+
+    private IEnumerable<NetPeer> GetPeers(NetPeer? excludePeer = null)
+    {
         foreach (var peer in Manager.ConnectedPeerList.Where(peer => peer != excludePeer))
         {
             if (NetworkManager.ClientManager.IsLocalPeer(peer)) continue;
 
-            peer.Send(packet.GetData(), DeliveryMethod.ReliableOrdered);
+            yield return peer;
+        }
+    }
+
+    private void InitNetworkObject(NetworkObject networkObject, NetPeer? owner)
+    {
+        networkObject.Id = _nextId++;
+        networkObject.Owner = owner;
+
+        // todo: set IsOwner based on Owner
+        if (owner != null && NetworkManager.ClientManager.IsLocalPeer(owner))
+        {
+            networkObject.IsOwner = true;
         }
     }
 }
