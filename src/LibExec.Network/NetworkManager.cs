@@ -11,10 +11,9 @@ public sealed class NetworkManager
     private readonly Dictionary<Type, Func<NetworkObject>> _networkObjectsCache = new();
     private readonly Dictionary<Type, Func<Packet>> _packetsCache = new();
     internal readonly Dictionary<Type, Action<Packet>> Callbacks = new();
+    internal readonly Dictionary<uint, NetworkObject> NetworkObjects = new();
     internal readonly BiDictionary<Type> NetworkObjectTypes;
     internal readonly BiDictionary<Type> PacketTypes;
-
-    internal readonly Dictionary<NetworkObject, IRef<NetworkObject>> Refs = new();
 
     public NetworkManager()
     {
@@ -119,12 +118,7 @@ public sealed class NetworkManager
 
     public IEnumerable<T> Query<T>() where T : NetworkObject
     {
-        if (ServerManager.IsRunning)
-        {
-            return ServerManager.NetworkObjects.Values.OfType<T>();
-        }
-
-        return ClientManager.NetworkObjects.Values.OfType<T>();
+        return NetworkObjects.Values.OfType<T>();
     }
 
     internal void InvokeSpawnNetworkEvent(NetworkObject networkObject)
@@ -147,7 +141,7 @@ public sealed class NetworkManager
         _packetsCache.Add(typeof(T), creator);
     }
 
-    internal void EnsureMethodCalledByServer()
+    internal void EnsureMethodIsCalledByServer()
     {
         if (!IsServer)
         {

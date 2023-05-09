@@ -6,7 +6,6 @@ public abstract class ManagerBase
 {
     private readonly EventBasedNetListener _listener = new();
     protected readonly NetManager Manager;
-    internal readonly Dictionary<uint, NetworkObject> NetworkObjects = new();
     private ConnectionState _connectionState;
 
     protected ManagerBase()
@@ -55,7 +54,7 @@ public abstract class ManagerBase
 
         ConnectionState = ConnectionState.Stopping;
         Manager.Stop();
-        NetworkObjects.Clear();
+        NetworkManager.NetworkObjects.Clear();
     }
 
     protected virtual void OnConnectionRequest(ConnectionRequest request)

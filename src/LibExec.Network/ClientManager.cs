@@ -44,21 +44,19 @@ public sealed class ClientManager : ManagerBase
         instance.Id = packet.Id;
         instance.IsOwner = packet.IsOwner;
 
-        NetworkObjects.Add(instance.Id, instance);
+        NetworkManager.NetworkObjects.Add(instance.Id, instance);
         NetworkManager.InvokeSpawnNetworkEvent(instance);
     }
 
     private void OnDestroyNetworkObject(DestroyNetworkObjectPacket packet)
     {
-        var instance = NetworkObjects[packet.Id];
-        NetworkObjects.Remove(packet.Id);
-
-        if (NetworkManager.Refs.TryGetValue(instance, out var value))
-        {
-            value.RemoveInstance();
-            NetworkManager.Refs.Remove(instance);
-        }
-
+        var instance = NetworkManager.NetworkObjects[packet.Id];
+        NetworkManager.NetworkObjects.Remove(packet.Id);
         NetworkManager.InvokeDestroyNetworkEvent();
+    }
+
+    public bool IsLocalPeer(NetPeer peer)
+    {
+        return IsRunning && Manager.ConnectedPeerList.First().Id == peer.Id;
     }
 }

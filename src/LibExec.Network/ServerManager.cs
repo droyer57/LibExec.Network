@@ -43,12 +43,15 @@ public sealed class ServerManager : ManagerBase
             var instance = NetworkManager.CreateNetworkObject(NetworkManager.PlayerType);
             instance.Id = _nextId++;
             instance.Owner = peer;
-            NetworkObjects.Add(instance.Id, instance);
+            NetworkManager.NetworkObjects.Add(instance.Id, instance);
+            NetworkManager.InvokeSpawnNetworkEvent(instance);
 
             SpawnToAll(instance, peer);
         }
 
-        foreach (var networkObject in NetworkObjects.Values)
+        if (NetworkManager.ClientManager.IsLocalPeer(peer)) return;
+
+        foreach (var networkObject in NetworkManager.NetworkObjects.Values)
         {
             Spawn(networkObject, peer);
         }
@@ -56,7 +59,7 @@ public sealed class ServerManager : ManagerBase
 
     protected override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
-        var res = NetworkObjects.FirstOrDefault(x => x.Value.Owner == peer).Value;
+        var res = NetworkManager.NetworkObjects.FirstOrDefault(x => x.Value.Owner == peer).Value;
         if (res == null) return;
         Destroy(res, peer);
     }
@@ -65,6 +68,8 @@ public sealed class ServerManager : ManagerBase
     {
         foreach (var peer in Manager.ConnectedPeerList.Where(peer => peer != excludePeer))
         {
+            if (NetworkManager.ClientManager.IsLocalPeer(peer)) continue;
+
             Spawn(networkObject, peer);
         }
     }
@@ -85,15 +90,25 @@ public sealed class ServerManager : ManagerBase
     {
         networkObject.Id = _nextId++;
         networkObject.Owner = peer;
-        NetworkObjects.Add(networkObject.Id, networkObject);
+        NetworkManager.NetworkObjects.Add(networkObject.Id, networkObject);
+        NetworkManager.InvokeSpawnNetworkEvent(networkObject);
         SpawnToAll(networkObject);
     }
 
-    internal void Destroy(NetworkObject networkObject, NetPeer? exclude = null)
+    internal void Destroy(NetworkObject networkObject, NetPeer? excludePeer = null)
     {
-        NetworkObjects.Remove(networkObject.Id);
+        if (!networkObject.IsValid) return;
+
+        NetworkManager.NetworkObjects.Remove(networkObject.Id);
+        NetworkManager.InvokeDestroyNetworkEvent();
 
         var packet = new DestroyNetworkObjectPacket { Id = networkObject.Id };
-        Manager.SendToAll(packet.GetData(), DeliveryMethod.ReliableOrdered, exclude);
+
+        foreach (var peer in Manager.ConnectedPeerList.Where(peer => peer != excludePeer))
+        {
+            if (NetworkManager.ClientManager.IsLocalPeer(peer)) continue;
+
+            peer.Send(packet.GetData(), DeliveryMethod.ReliableOrdered);
+        }
     }
 }

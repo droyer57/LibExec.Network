@@ -37,12 +37,12 @@
     <DefaultButton Text="Destroy" OnClick="Destroy"/>
 </Stack>
 
-@if (IsClientRunning)
+@if (IsServerRunning || IsClientRunning)
 {
     <Stack>
-        @if (_entity.Instance != null)
+        @if (_entity?.IsValid == true)
         {
-            <p>@_entity.Instance.Value</p>
+            <p>@_entity.Value</p>
         }
     </Stack>
 }
@@ -51,7 +51,7 @@
 
     private string _address = null!;
     private string _port = null!;
-    private Ref<Entity> _entity = null!;
+    private Entity? _entity;
 
     private bool IsServerRunning => NetworkManager.ServerManager.IsRunning;
     private bool IsClientRunning => NetworkManager.ClientManager.IsRunning;
@@ -122,7 +122,6 @@
 
     private void OnDestroyNetworkObject()
     {
-    // NetworkObject.UpdateRef(ref _entity);
         InvokeAsync(StateHasChanged);
     }
 
@@ -134,7 +133,7 @@
 
     private void Destroy()
     {
-        _entity.Instance?.Destroy();
+        _entity?.Destroy();
     }
 
 }
