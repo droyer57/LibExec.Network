@@ -42,7 +42,7 @@ public sealed class ClientManager : ManagerBase
     {
         var instance = NetworkManager.CreateNetworkObject(packet.Type);
         instance.Id = packet.Id;
-        instance.IsOwner = packet.IsOwner;
+        instance.OwnerId = packet.OwnerId;
 
         NetworkManager.AddNetworkObject(instance);
     }
@@ -55,6 +55,11 @@ public sealed class ClientManager : ManagerBase
 
     public bool IsLocalPeer(NetPeer peer)
     {
-        return IsRunning && Manager.FirstPeer.Id == peer.Id;
+        return IsLocalPeerId(peer.Id);
+    }
+
+    public bool IsLocalPeerId(int peerId)
+    {
+        return IsRunning && Manager.FirstPeer.RemoteId == peerId;
     }
 }

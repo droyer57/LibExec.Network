@@ -5,8 +5,8 @@ namespace LibExec.Network;
 public abstract class NetworkObject
 {
     public uint Id { get; internal set; }
-    internal NetPeer? Owner { get; set; }
-    public bool IsOwner { get; internal set; }
+    internal int OwnerId { get; set; }
+    public bool IsOwner => ClientManager.IsLocalPeerId(OwnerId);
 
     private NetworkManager NetworkManager => NetworkManager.Instance;
     private ClientManager ClientManager => NetworkManager.ClientManager;

@@ -57,7 +57,7 @@ public sealed class ServerManager : ManagerBase
 
     protected override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
-        var data = NetworkManager.NetworkObjects.Where(x => x.Value.Owner == peer);
+        var data = NetworkManager.NetworkObjects.Where(x => x.Value.OwnerId == peer.Id);
         foreach (var item in data)
         {
             Destroy(item.Value, peer);
@@ -78,13 +78,13 @@ public sealed class ServerManager : ManagerBase
         {
             Type = networkObject.GetType(),
             Id = networkObject.Id,
-            IsOwner = peer == networkObject.Owner
+            OwnerId = networkObject.OwnerId
         };
 
         peer.Send(packet.GetData(), DeliveryMethod.ReliableOrdered);
     }
 
-    internal void SpawnWithInit(NetworkObject networkObject, NetPeer? peer = null)
+    internal void SpawnWithInit(NetworkObject networkObject, NetPeer? peer)
     {
         InitNetworkObject(networkObject, peer);
         NetworkManager.AddNetworkObject(networkObject);
@@ -107,7 +107,7 @@ public sealed class ServerManager : ManagerBase
 
     private IEnumerable<NetPeer> GetPeers(NetPeer? excludePeer = null)
     {
-        foreach (var peer in Manager.ConnectedPeerList.Where(peer => peer != excludePeer))
+        foreach (var peer in Manager.ConnectedPeerList.Where(x => x != excludePeer))
         {
             if (NetworkManager.ClientManager.IsLocalPeer(peer)) continue;
 
@@ -118,12 +118,6 @@ public sealed class ServerManager : ManagerBase
     private void InitNetworkObject(NetworkObject networkObject, NetPeer? owner)
     {
         networkObject.Id = _nextId++;
-        networkObject.Owner = owner;
-
-        // todo: set IsOwner based on Owner
-        if (owner != null && NetworkManager.ClientManager.IsLocalPeer(owner))
-        {
-            networkObject.IsOwner = true;
-        }
+        networkObject.OwnerId = owner?.Id ?? -1;
     }
 }
