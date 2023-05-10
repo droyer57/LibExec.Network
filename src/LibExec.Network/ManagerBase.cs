@@ -75,6 +75,6 @@ public abstract class ManagerBase
         var type = NetworkManager.PacketTypes.Get(reader.GetByte());
         var packet = NetworkManager.CreatePacket(type);
         packet.DeserializeInternal(reader);
-        NetworkManager.Callbacks[type].Invoke(packet);
+        NetworkManager.PacketCallbacks[type].Invoke(packet);
     }
 }
