@@ -2,8 +2,7 @@ using LiteNetLib.Utils;
 
 namespace LibExec.Network;
 
-// todo: make this class public to allow user to send packet 
-public abstract class Packet
+public class Packet
 {
     protected static NetworkManager NetworkManager => NetworkManager.Instance;
 

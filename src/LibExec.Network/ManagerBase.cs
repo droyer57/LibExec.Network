@@ -72,9 +72,6 @@ public abstract class ManagerBase
     protected virtual void OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channel,
         DeliveryMethod deliveryMethod)
     {
-        var type = NetworkManager.PacketTypes.Get(reader.GetByte());
-        var packet = NetworkManager.CreatePacket(type);
-        packet.DeserializeInternal(reader);
-        NetworkManager.PacketCallbacks[type].Invoke(packet);
+        NetworkManager.NetPacketProcessor.ReadAllPackets(reader);
     }
 }

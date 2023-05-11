@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text;
 using LibExec.Network.SourceGenerators.Builder;
 using LibExec.Network.SourceGenerators.Models;
@@ -37,6 +38,14 @@ internal sealed class NetworkInitGenerator : IIncrementalGenerator
         var classDeclarationSyntax = (ClassDeclarationSyntax)context.Node;
         var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclarationSyntax);
         if (classSymbol == null) return null;
+
+        var attribute = classSymbol.GetAttributes().Select(x => x.AttributeClass?.ToDisplayString())
+            .FirstOrDefault(x => x == "LibExec.Network.PacketAttribute"); // todo: use const
+        if (attribute != null)
+        {
+            return new NetworkInitDataToGenerate
+                { PacketName = $"{classSymbol.ContainingNamespace}.{classSymbol.Name}" };
+        }
 
         return classSymbol.BaseType?.Name switch
         {

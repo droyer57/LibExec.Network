@@ -5,7 +5,7 @@ public sealed partial class NetworkManager
     public const string LocalAddress = "localhost";
     public const int DefaultPort = 1995;
     private readonly Dictionary<Type, Func<NetworkObject>> _networkObjectsCache = new();
-    private readonly Dictionary<Type, Func<Packet>> _packetsCache = new();
+    private readonly Dictionary<Type, Func<object>> _packetsCache = new();
 
     public NetworkManager()
     {
@@ -15,6 +15,8 @@ public sealed partial class NetworkManager
         {
             throw new Exception($"{nameof(NetworkManager)} can only have one instance");
         }
+
+        NetPacketProcessor.RegisterNestedType(() => new NetworkObjectType());
 
         Instance = this;
         ServerManager = new ServerManager();
@@ -79,7 +81,7 @@ public sealed partial class NetworkManager
         _networkObjectsCache.Add(typeof(T), creator);
     }
 
-    public void RegisterPacket<T>(Func<T> creator) where T : Packet
+    public void RegisterPacket<T>(Func<T> creator) where T : class
     {
         _packetsCache.Add(typeof(T), creator);
     }

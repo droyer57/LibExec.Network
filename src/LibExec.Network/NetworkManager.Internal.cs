@@ -3,6 +3,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using HarmonyLib;
 using LiteNetLib;
+using LiteNetLib.Utils;
 
 namespace LibExec.Network;
 
@@ -17,10 +18,12 @@ public partial class NetworkManager
     private readonly Dictionary<Type, BiDictionary<MethodInfo>> _methodTypes = new();
     private readonly List<MethodInfo> _serverMethodInfos = new();
     internal readonly Dictionary<uint, NetworkObject> NetworkObjects = new();
-    internal readonly Dictionary<Type, Action<Packet>> PacketCallbacks = new();
+    internal readonly Dictionary<Type, Action<object>> PacketCallbacks = new();
     internal BiDictionary<Type> NetworkObjectTypes { get; private set; } = null!;
     internal BiDictionary<Type> PacketTypes { get; private set; } = null!;
     internal Type? PlayerType { get; private set; }
+
+    internal NetPacketProcessor NetPacketProcessor { get; } = new();
 
     private void InitInternal()
     {
@@ -30,7 +33,8 @@ public partial class NetworkManager
         var executingAssembly = Assembly.GetExecutingAssembly();
 
         var networkObjectTypes = entryAssembly.GetTypes().Where(x => x.BaseType == typeof(NetworkObject)).ToArray();
-        var packetTypes = executingAssembly.GetTypes().Where(x => x.BaseType == typeof(Packet)).ToArray();
+        var packetTypes = executingAssembly.GetTypes().Where(x => x.GetCustomAttribute<PacketAttribute>() != null)
+            .ToArray();
 
         NetworkObjectTypes = new BiDictionary<Type>(networkObjectTypes);
         PacketTypes = new BiDictionary<Type>(packetTypes);
@@ -83,7 +87,7 @@ public partial class NetworkManager
         return creator();
     }
 
-    internal Packet CreatePacket(Type type)
+    internal object CreatePacket(Type type)
     {
         if (!_packetsCache.TryGetValue(type, out var creator))
         {
@@ -93,9 +97,9 @@ public partial class NetworkManager
         return creator();
     }
 
-    internal void RegisterPacket<T>(Action<T> callback) where T : Packet
+    internal void RegisterPacket<T>(Action<T> callback) where T : class, new()
     {
-        PacketCallbacks.Add(typeof(T), x => callback((T)x));
+        NetPacketProcessor.SubscribeReusable(callback);
     }
 
     internal void EnsureMethodIsCalledByServer()
@@ -144,7 +148,10 @@ public partial class NetworkManager
         {
             var methodId = Instance._methodTypes[__instance.GetType()].Get(__originalMethod);
             var packet = new InvokeMethodPacket { NetworkObjectId = __instance.Id, MethodId = methodId };
-            Instance.ClientManager.Manager.FirstPeer.Send(packet.GetData(), DeliveryMethod.ReliableOrdered);
+
+            var writer = new NetDataWriter();
+            Instance.NetPacketProcessor.Write(writer, packet);
+            Instance.ClientManager.Manager.FirstPeer.Send(writer, DeliveryMethod.ReliableOrdered);
         }
 
         return Instance.IsServer;
