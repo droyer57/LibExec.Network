@@ -84,9 +84,9 @@ public sealed class ServerManager : ManagerBase
         peer.Send(packet.GetData(), DeliveryMethod.ReliableOrdered);
     }
 
-    internal void SpawnWithInit(NetworkObject networkObject, NetPeer? peer)
+    internal void SpawnWithInit(NetworkObject networkObject, NetPeer? owner)
     {
-        InitNetworkObject(networkObject, peer);
+        InitNetworkObject(networkObject, owner);
         NetworkManager.AddNetworkObject(networkObject);
         SpawnToAll(networkObject);
     }

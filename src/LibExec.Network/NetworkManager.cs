@@ -20,7 +20,7 @@ public sealed partial class NetworkManager
         ServerManager = new ServerManager();
         ClientManager = new ClientManager();
 
-        LoadTypes();
+        InitInternal();
     }
 
     public int Port { get; private set; } = DefaultPort;
@@ -32,6 +32,7 @@ public sealed partial class NetworkManager
 
     public bool IsServer => ServerManager.ConnectionState == ConnectionState.Started;
     public bool IsClient => ClientManager.ConnectionState == ConnectionState.Started;
+    public bool IsClientOnly => !IsServer && IsClient;
 
     public event Action<NetworkObject>? SpawnNetworkObjectEvent;
     public event Action<NetworkObject>? DestroyNetworkObjectEvent;

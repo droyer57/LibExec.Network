@@ -1,4 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
 using System.Reflection;
+using HarmonyLib;
+using LiteNetLib;
 
 namespace LibExec.Network;
 
@@ -6,14 +10,22 @@ public partial class NetworkManager
 {
     internal const string NetworkInitClassName = "InternalNetworkInit";
     internal const string Key = "DDurBXaw8sLsYs9x";
+
+    private readonly Harmony _harmony = new(Key);
+    private readonly Dictionary<MethodInfo, Action<object, object[]?>> _methods = new();
+
+    private readonly Dictionary<Type, BiDictionary<MethodInfo>> _methodTypes = new();
+    private readonly List<MethodInfo> _serverMethodInfos = new();
     internal readonly Dictionary<uint, NetworkObject> NetworkObjects = new();
     internal readonly Dictionary<Type, Action<Packet>> PacketCallbacks = new();
     internal BiDictionary<Type> NetworkObjectTypes { get; private set; } = null!;
     internal BiDictionary<Type> PacketTypes { get; private set; } = null!;
     internal Type? PlayerType { get; private set; }
 
-    private void LoadTypes()
+    private void InitInternal()
     {
+        RegisterPacket<InvokeMethodPacket>(OnInvokeMethod);
+
         var entryAssembly = Assembly.GetEntryAssembly() ?? throw new Exception("Cannot get entry assembly");
         var executingAssembly = Assembly.GetExecutingAssembly();
 
@@ -28,6 +40,37 @@ public partial class NetworkManager
         Activator.CreateInstance(typeof(InternalNetworkInit), true);
         var networkInitClassType = entryAssembly.GetTypes().First(x => x.Name == NetworkInitClassName);
         Activator.CreateInstance(networkInitClassType, true);
+
+        LoadMethods(networkObjectTypes);
+        PatchServerMethods();
+    }
+
+    private void LoadMethods(IEnumerable<Type> networkObjectTypes)
+    {
+        foreach (var type in networkObjectTypes)
+        {
+            var methods = type.GetMethods().Where(x => x.GetCustomAttribute<ServerAttribute>() != null).ToArray();
+            _methodTypes[type] = new BiDictionary<MethodInfo>(methods);
+
+            foreach (var method in methods)
+            {
+                if (method.GetCustomAttribute<ServerAttribute>() != null)
+                {
+                    _serverMethodInfos.Add(method);
+                    _methods.Add(method, CreateMethod(method));
+                }
+            }
+        }
+    }
+
+    private void PatchServerMethods()
+    {
+        var serverPatch = GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
+            .First(x => x.Name == nameof(ServerPatch));
+        foreach (var method in _serverMethodInfos)
+        {
+            _harmony.Patch(method, new HarmonyMethod(serverPatch));
+        }
     }
 
     internal NetworkObject CreateNetworkObject(Type type)
@@ -73,5 +116,46 @@ public partial class NetworkManager
     {
         NetworkObjects.Remove(networkObject.Id);
         DestroyNetworkObjectEvent?.Invoke(networkObject);
+    }
+
+    private static Action<object, object[]?> CreateMethod(MethodInfo methodInfo)
+    {
+        var instance = Expression.Parameter(typeof(object), "instance");
+        var parameters = Expression.Parameter(typeof(object[]), "parameters");
+
+        var instanceCast = Expression.Convert(instance, methodInfo.DeclaringType!);
+
+        var parametersCasts = new List<Expression>();
+        var parameterInfos = methodInfo.GetParameters();
+        for (var i = 0; i < parameterInfos.Length; i++)
+        {
+            var data = Expression.ArrayIndex(parameters, Expression.Constant(i));
+            parametersCasts.Add(Expression.Convert(data, parameterInfos[i].ParameterType));
+        }
+
+        var call = Expression.Call(instanceCast, methodInfo, parametersCasts);
+        return Expression.Lambda<Action<object, object[]?>>(call, instance, parameters).Compile();
+    }
+
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
+    private static bool ServerPatch(NetworkObject __instance, MethodInfo __originalMethod, object[] __args)
+    {
+        if (Instance.IsClientOnly)
+        {
+            var methodId = Instance._methodTypes[__instance.GetType()].Get(__originalMethod);
+            var packet = new InvokeMethodPacket { NetworkObjectId = __instance.Id, MethodId = methodId };
+            Instance.ClientManager.Manager.FirstPeer.Send(packet.GetData(), DeliveryMethod.ReliableOrdered);
+        }
+
+        return Instance.IsServer;
+    }
+
+    private void OnInvokeMethod(InvokeMethodPacket packet)
+    {
+        var instance = NetworkObjects[packet.NetworkObjectId];
+        var methodInfo = _methodTypes[instance.GetType()].Get(packet.MethodId);
+        var method = _methods[methodInfo];
+
+        method.Invoke(instance, null);
     }
 }
