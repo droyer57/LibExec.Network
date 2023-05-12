@@ -32,6 +32,7 @@ public abstract class ManagerBase
     }
 
     public bool IsRunning => Manager.IsRunning;
+    public bool IsStarted => _connectionState == ConnectionState.Started;
 
     public event Action<ConnectionState>? ConnectionStateChangedEvent;
 
@@ -72,6 +73,6 @@ public abstract class ManagerBase
     protected virtual void OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channel,
         DeliveryMethod deliveryMethod)
     {
-        NetworkManager.NetPacketProcessor.ReadAllPackets(reader);
+        NetworkManager.PacketProcessor.ReadAllPackets(reader);
     }
 }

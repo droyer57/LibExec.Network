@@ -47,9 +47,9 @@ public sealed class ServerManager : ManagerBase
             }
         }
 
-        if (NetworkManager.PlayerType == null) return;
+        if (Reflection.PlayerType == null) return;
 
-        var instance = NetworkManager.CreateNetworkObject(NetworkManager.PlayerType);
+        var instance = NetworkManager.CreateNetworkObject(Reflection.PlayerType);
         InitNetworkObject(instance, peer);
         NetworkManager.AddNetworkObject(instance);
 
@@ -84,7 +84,7 @@ public sealed class ServerManager : ManagerBase
         };
 
         var writer = new NetDataWriter();
-        NetworkManager.NetPacketProcessor.Write(writer, packet);
+        NetworkManager.PacketProcessor.Write(writer, packet);
         peer.Send(writer, DeliveryMethod.ReliableOrdered);
     }
 
@@ -106,7 +106,7 @@ public sealed class ServerManager : ManagerBase
         foreach (var peer in GetPeers(excludePeer))
         {
             var writer = new NetDataWriter();
-            NetworkManager.NetPacketProcessor.Write(writer, packet);
+            NetworkManager.PacketProcessor.Write(writer, packet);
             peer.Send(writer, DeliveryMethod.ReliableOrdered);
         }
     }
