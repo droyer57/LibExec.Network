@@ -20,9 +20,11 @@ internal sealed class Reflection
         var entryAssembly = Assembly.GetEntryAssembly() ?? throw new Exception("Cannot get entry assembly");
         var executingAssembly = Assembly.GetExecutingAssembly();
 
-        NetworkObjectTypes = entryAssembly.GetTypes().Where(x => x.BaseType == typeof(NetworkObject)).ToArray();
-        PacketTypes = executingAssembly.GetTypes().Where(x => x.GetCustomAttribute<PacketAttribute>() != null)
-            .ToArray();
+        NetworkObjectTypes = GetTypesWithBaseType<NetworkObject>(entryAssembly).ToArray();
+
+        var executingPacketTypes = GetTypesWithAttribute<PacketAttribute>(executingAssembly);
+        var entryPacketTypes = GetTypesWithAttribute<PacketAttribute>(entryAssembly);
+        PacketTypes = executingPacketTypes.Concat(entryPacketTypes).ToArray();
 
         PlayerType = NetworkObjectTypes.FirstOrDefault(x => x.GetCustomAttribute<NetworkPlayerAttribute>() != null);
 
@@ -52,5 +54,15 @@ internal sealed class Reflection
 
         var call = Expression.Call(instanceCast, methodInfo, parametersCasts);
         return Expression.Lambda<Action<object, object[]?>>(call, instance, parameters).Compile();
+    }
+
+    private static IEnumerable<Type> GetTypesWithBaseType<T>(Assembly assembly)
+    {
+        return assembly.GetTypes().Where(x => x.BaseType == typeof(T));
+    }
+
+    private static IEnumerable<Type> GetTypesWithAttribute<T>(Assembly assembly) where T : Attribute
+    {
+        return assembly.GetTypes().Where(x => x.GetCustomAttribute<T>() != null);
     }
 }

@@ -37,8 +37,10 @@
     <DefaultButton Text="Destroy" OnClick="Destroy"/>
 </Stack>
 
-<Stack ClassName="w-fit mt-1 ml-2">
+<Stack Horizontal="true" ClassName="w-fit mt-1 ml-2">
     <DefaultButton Text="Change" OnClick="ChangeValue"/>
+    <Separator ClassName="mx-1"/>
+    <DefaultButton Text="TestPacket" OnClick="SendPacket"/>
 </Stack>
 
 @if (IsServerRunning || IsClientRunning)
@@ -69,6 +71,8 @@
         NetworkManager.DestroyNetworkObjectEvent += OnDestroyNetworkObject;
 
         _entity = NetworkManager.Query<Entity>().FirstOrDefault();
+
+        NetworkManager.RegisterPacket<TestPacket>(OnTestPacket);
     }
 
     public void Dispose()
@@ -77,6 +81,8 @@
         NetworkManager.ClientManager.ConnectionStateChangedEvent -= OnClientConnectionStateChanged;
         NetworkManager.SpawnNetworkObjectEvent -= OnSpawnNetworkObjectEvent;
         NetworkManager.DestroyNetworkObjectEvent -= OnDestroyNetworkObject;
+
+        NetworkManager.RemovePacket<TestPacket>();
     }
 
     private int? GetPort()
@@ -143,6 +149,21 @@
     private void ChangeValue()
     {
         _entity?.ChangeValueServer();
+    }
+
+    private void SendPacket()
+    {
+        var packet = new TestPacket { Text = "Ceci est un test" };
+
+        if (NetworkManager.IsClient)
+        {
+            NetworkManager.ClientManager.Peer.SendPacket(packet);
+        }
+    }
+
+    private void OnTestPacket(TestPacket packet)
+    {
+        Console.WriteLine(packet.Text);
     }
 
 }

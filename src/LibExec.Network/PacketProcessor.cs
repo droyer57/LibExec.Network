@@ -7,22 +7,26 @@ public sealed class PacketProcessor
     private readonly Dictionary<Type, RegisterDelegate> _callbacks = new();
 
     private readonly NetSerializer _netSerializer = new();
-    private readonly BiDictionary<Type> _packetTypes;
+    private readonly BiDictionary<Type, ushort> _packetTypes;
 
     public PacketProcessor()
     {
-        _packetTypes = new BiDictionary<Type>(Reflection.PacketTypes);
+        _packetTypes = new BiDictionary<Type, ushort>(Reflection.PacketTypes);
     }
 
     private RegisterDelegate GetCallback(NetDataReader reader)
     {
-        var header = _packetTypes.Get(reader.GetByte());
-        if (!_callbacks.TryGetValue(header, out var action))
+        if (!_callbacks.TryGetValue(GetHeader(reader), out var action))
         {
             throw new ParseException("Undefined packet in NetDataReader");
         }
 
         return action;
+    }
+
+    private Type GetHeader(NetDataReader reader)
+    {
+        return _packetTypes.Get(reader.GetUShort());
     }
 
     private void WriteHeader<T>(NetDataWriter writer)

@@ -5,7 +5,7 @@ namespace LibExec.Network;
 public abstract class ManagerBase
 {
     private readonly EventBasedNetListener _listener = new();
-    internal readonly NetManager Manager; // todo: make it protected
+    internal readonly NetManager Manager; // todo: make it protected ?
     private ConnectionState _connectionState;
 
     protected ManagerBase()

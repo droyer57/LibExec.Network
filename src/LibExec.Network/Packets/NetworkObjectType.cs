@@ -2,9 +2,9 @@ using LiteNetLib.Utils;
 
 namespace LibExec.Network;
 
-internal sealed class NetworkObjectType : INetSerializable
+internal struct NetworkObjectType : INetSerializable
 {
-    private Type _value = null!;
+    private Type _value;
 
     public void Serialize(NetDataWriter writer)
     {
@@ -13,7 +13,7 @@ internal sealed class NetworkObjectType : INetSerializable
 
     public void Deserialize(NetDataReader reader)
     {
-        _value = NetworkManager.Instance.NetworkObjectTypes.Get(reader.GetByte());
+        _value = NetworkManager.Instance.NetworkObjectTypes.Get(reader.GetUShort());
     }
 
     public static implicit operator NetworkObjectType(Type type)

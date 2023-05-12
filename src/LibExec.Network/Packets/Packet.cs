@@ -17,7 +17,7 @@ public class Packet
     public byte[] GetData()
     {
         var writer = new NetDataWriter();
-        writer.Put(NetworkManager.PacketTypes.Get(GetType()));
+        // writer.Put(NetworkManager.PacketTypes.Get(GetType()));
         Serialize(writer);
 
         return writer.Data;

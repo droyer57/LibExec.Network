@@ -7,6 +7,7 @@ public abstract class NetworkObject
     public uint Id { get; internal set; }
     internal int OwnerId { get; set; }
     public bool IsOwner => ClientManager.IsLocalPeerId(OwnerId);
+    public NetPeer? Owner { get; internal set; }
 
     private NetworkManager NetworkManager => NetworkManager.Instance;
     private ClientManager ClientManager => NetworkManager.ClientManager;

@@ -11,6 +11,7 @@ public sealed class ClientManager : ManagerBase
     }
 
     public string Address { get; internal set; } = NetworkManager.LocalAddress;
+    public NetPeer Peer => Manager.FirstPeer;
 
     internal override void Start()
     {
@@ -43,6 +44,10 @@ public sealed class ClientManager : ManagerBase
         var instance = NetworkManager.CreateNetworkObject(packet.Type);
         instance.Id = packet.Id;
         instance.OwnerId = packet.OwnerId;
+        if (instance.IsOwner)
+        {
+            instance.Owner = Manager.FirstPeer;
+        }
 
         NetworkManager.AddNetworkObject(instance);
     }

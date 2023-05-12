@@ -16,11 +16,10 @@ public sealed class NetworkManager
     private readonly Harmony _harmony = new(Key);
     private readonly Dictionary<MethodInfo, Action<object, object[]?>> _methods = new();
 
-    private readonly Dictionary<Type, BiDictionary<MethodInfo>> _methodTypes = new();
+    private readonly Dictionary<Type, BiDictionary<MethodInfo, ushort>> _methodTypes = new();
     private readonly Dictionary<Type, Func<NetworkObject>> _networkObjectsCache = new();
     private readonly List<MethodInfo> _serverMethodInfos = new();
     internal readonly Dictionary<uint, NetworkObject> NetworkObjects = new();
-    internal readonly Dictionary<Type, Action<object>> PacketCallbacks = new();
 
     public NetworkManager()
     {
@@ -34,10 +33,9 @@ public sealed class NetworkManager
         var _ = new Reflection();
         PacketProcessor = new PacketProcessor();
 
-        PacketProcessor.RegisterType(() => new NetworkObjectType());
+        PacketProcessor.RegisterType<NetworkObjectType>();
 
-        NetworkObjectTypes = new BiDictionary<Type>(Reflection.NetworkObjectTypes);
-        PacketTypes = new BiDictionary<Type>(Reflection.PacketTypes);
+        NetworkObjectTypes = new BiDictionary<Type, ushort>(Reflection.NetworkObjectTypes);
 
         ServerManager = new ServerManager();
         ClientManager = new ClientManager();
@@ -48,8 +46,7 @@ public sealed class NetworkManager
         PatchServerMethods();
     }
 
-    internal BiDictionary<Type> NetworkObjectTypes { get; private set; }
-    internal BiDictionary<Type> PacketTypes { get; private set; }
+    internal BiDictionary<Type, ushort> NetworkObjectTypes { get; private set; }
 
     internal PacketProcessor PacketProcessor { get; }
 
@@ -117,7 +114,7 @@ public sealed class NetworkManager
         foreach (var type in Reflection.NetworkObjectTypes)
         {
             var methods = type.GetMethods().Where(x => x.GetCustomAttribute<ServerAttribute>() != null).ToArray();
-            _methodTypes[type] = new BiDictionary<MethodInfo>(methods);
+            _methodTypes[type] = new BiDictionary<MethodInfo, ushort>(methods);
 
             foreach (var method in methods)
             {
@@ -150,9 +147,14 @@ public sealed class NetworkManager
         return creator();
     }
 
-    internal void RegisterPacket<T>(Action<T> callback) where T : class, new()
+    public void RegisterPacket<T>(Action<T> callback) where T : class, new()
     {
         PacketProcessor.RegisterCallback(callback);
+    }
+
+    public void RemovePacket<T>()
+    {
+        PacketProcessor.RemoveCallback<T>();
     }
 
     internal void EnsureMethodIsCalledByServer()

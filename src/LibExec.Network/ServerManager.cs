@@ -7,6 +7,8 @@ public sealed class ServerManager : ManagerBase
 {
     private uint _nextId;
 
+    public NetPeer[] Peers { get; private set; } = null!;
+
     internal override void Start()
     {
         if (Manager.IsRunning) return;
@@ -39,6 +41,8 @@ public sealed class ServerManager : ManagerBase
 
     protected override void OnPeerConnected(NetPeer peer)
     {
+        Peers = Manager.ConnectedPeerList.ToArray();
+
         if (!NetworkManager.ClientManager.IsLocalPeer(peer))
         {
             foreach (var networkObject in NetworkManager.NetworkObjects.Values)
@@ -58,6 +62,8 @@ public sealed class ServerManager : ManagerBase
 
     protected override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
+        Peers = Manager.ConnectedPeerList.ToArray();
+
         var data = NetworkManager.NetworkObjects.Where(x => x.Value.OwnerId == peer.Id);
         foreach (var item in data)
         {
@@ -79,8 +85,7 @@ public sealed class ServerManager : ManagerBase
         {
             Type = networkObject.GetType(),
             Id = networkObject.Id,
-            OwnerId = networkObject.OwnerId,
-            Test = 25
+            OwnerId = networkObject.OwnerId
         };
 
         var writer = new NetDataWriter();
@@ -125,5 +130,6 @@ public sealed class ServerManager : ManagerBase
     {
         networkObject.Id = _nextId++;
         networkObject.OwnerId = owner?.Id ?? -1;
+        networkObject.Owner = owner;
     }
 }
