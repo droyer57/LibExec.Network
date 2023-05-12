@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Linq;
 using System.Text;
 using LibExec.Network.SourceGenerators.Builder;
 using LibExec.Network.SourceGenerators.Models;
@@ -14,7 +13,6 @@ namespace LibExec.Network.SourceGenerators.Generators;
 internal sealed class NetworkInitGenerator : IIncrementalGenerator
 {
     private const string NetworkObjectClassName = "NetworkObject";
-    private const string PacketClassName = "Packet";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -39,22 +37,13 @@ internal sealed class NetworkInitGenerator : IIncrementalGenerator
         var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclarationSyntax);
         if (classSymbol == null) return null;
 
-        var attribute = classSymbol.GetAttributes().Select(x => x.AttributeClass?.ToDisplayString())
-            .FirstOrDefault(x => x == "LibExec.Network.PacketAttribute"); // todo: use const
-        if (attribute != null)
+        if (classSymbol.BaseType?.Name == NetworkObjectClassName)
         {
             return new NetworkInitDataToGenerate
-                { PacketName = $"{classSymbol.ContainingNamespace}.{classSymbol.Name}" };
+                { NetworkObjectName = $"{classSymbol.ContainingNamespace}.{classSymbol.Name}" };
         }
 
-        return classSymbol.BaseType?.Name switch
-        {
-            NetworkObjectClassName => new NetworkInitDataToGenerate
-                { NetworkObjectName = $"{classSymbol.ContainingNamespace}.{classSymbol.Name}" },
-            PacketClassName => new NetworkInitDataToGenerate
-                { PacketName = $"{classSymbol.ContainingNamespace}.{classSymbol.Name}" },
-            _ => null
-        };
+        return null;
     }
 
     private static void Execute(SourceProductionContext context, ImmutableArray<NetworkInitDataToGenerate> source)

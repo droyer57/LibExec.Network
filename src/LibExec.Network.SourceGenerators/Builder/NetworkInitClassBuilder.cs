@@ -22,8 +22,7 @@ internal sealed class NetworkInitClassBuilder : BuilderBase
 
     internal void GenerateConstructor(ImmutableArray<NetworkInitDataToGenerate> source)
     {
-        var networkObjects = source.Where(x => x.NetworkObjectName != null).Select(x => x.NetworkObjectName).ToArray();
-        var packets = source.Where(x => x.PacketName != null).Select(x => x.PacketName).ToArray();
+        var networkObjects = source.Where(x => x.NetworkObjectName != null).Select(x => x.NetworkObjectName);
 
         AppendLine("private InternalNetworkInit()");
         AppendLine("{");
@@ -31,14 +30,7 @@ internal sealed class NetworkInitClassBuilder : BuilderBase
 
         foreach (var item in networkObjects)
         {
-            AppendLine($"NetworkManager.Instance.RegisterNetworkObject(() => new {item}());");
-        }
-
-        if (networkObjects.Length > 0 && packets.Length > 0) AppendLine();
-
-        foreach (var item in packets)
-        {
-            AppendLine($"NetworkManager.Instance.RegisterPacket(() => new {item}());");
+            AppendLine($"NetworkManager.Instance.RegisterNetworkObject<{item}>();");
         }
 
         DecreaseIndent();

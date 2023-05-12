@@ -18,7 +18,6 @@ public sealed class NetworkManager
 
     private readonly Dictionary<Type, BiDictionary<MethodInfo>> _methodTypes = new();
     private readonly Dictionary<Type, Func<NetworkObject>> _networkObjectsCache = new();
-    private readonly Dictionary<Type, Func<object>> _packetsCache = new();
     private readonly List<MethodInfo> _serverMethodInfos = new();
     internal readonly Dictionary<uint, NetworkObject> NetworkObjects = new();
     internal readonly Dictionary<Type, Action<object>> PacketCallbacks = new();
@@ -108,14 +107,9 @@ public sealed class NetworkManager
         return NetworkObjects.Values.OfType<T>();
     }
 
-    public void RegisterNetworkObject<T>(Func<T> creator) where T : NetworkObject
+    public void RegisterNetworkObject<T>() where T : NetworkObject, new()
     {
-        _networkObjectsCache.Add(typeof(T), creator);
-    }
-
-    public void RegisterPacket<T>(Func<T> creator) where T : class
-    {
-        _packetsCache.Add(typeof(T), creator);
+        _networkObjectsCache.Add(typeof(T), () => new T());
     }
 
     private void LoadMethods()
@@ -151,16 +145,6 @@ public sealed class NetworkManager
         if (!_networkObjectsCache.TryGetValue(type, out var creator))
         {
             throw new InvalidOperationException($"{nameof(CreateNetworkObject)}");
-        }
-
-        return creator();
-    }
-
-    internal object CreatePacket(Type type)
-    {
-        if (!_packetsCache.TryGetValue(type, out var creator))
-        {
-            throw new InvalidOperationException($"{nameof(CreatePacket)}");
         }
 
         return creator();
