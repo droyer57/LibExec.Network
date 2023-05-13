@@ -8,11 +8,11 @@ public sealed class PacketProcessor
     private readonly Dictionary<Type, RegisterDelegate> _callbacks = new();
 
     private readonly NetSerializer _netSerializer = new();
-    private readonly BiDictionary<Type, ushort> _packetTypes;
+    private readonly BiDictionary<Type> _packetTypes;
 
     public PacketProcessor()
     {
-        _packetTypes = new BiDictionary<Type, ushort>(Reflection.PacketTypes);
+        _packetTypes = new BiDictionary<Type>(Reflection.PacketTypes);
     }
 
     private RegisterDelegate GetCallback(NetDataReader reader)

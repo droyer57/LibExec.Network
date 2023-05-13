@@ -13,8 +13,8 @@ public sealed class NetworkManager
     internal const string Key = "DDurBXaw8sLsYs9x";
 
     private readonly Harmony _harmony = new(Key);
+    private readonly BiDictionary<MethodInfo> _methodInfos;
     private readonly Dictionary<MethodInfo, Action<object, object[]?>> _methods = new();
-    private readonly BiDictionary<MethodInfo, ushort> _methodTypes;
     private readonly Dictionary<Type, Func<NetworkObject>> _networkObjectsCache = new();
 
     public NetworkManager()
@@ -31,14 +31,14 @@ public sealed class NetworkManager
         PacketProcessor = new PacketProcessor();
         PacketProcessor.RegisterType<NetworkObjectType>();
 
-        NetworkObjectTypes = new BiDictionary<Type, ushort>(Reflection.NetworkObjectTypes);
+        NetworkObjectTypes = new BiDictionary<Type>(Reflection.NetworkObjectTypes);
 
         ServerManager = new ServerManager();
         ClientManager = new ClientManager();
 
         RegisterPacket<InvokeMethodPacket>(OnInvokeMethod);
 
-        _methodTypes = new BiDictionary<MethodInfo, ushort>(Reflection.ServerMethodInfos);
+        _methodInfos = new BiDictionary<MethodInfo>(Reflection.ServerMethodInfos);
         foreach (var method in Reflection.ServerMethodInfos)
         {
             _methods.Add(method, Reflection.CreateMethod(method));
@@ -48,7 +48,7 @@ public sealed class NetworkManager
     }
 
     internal Dictionary<uint, NetworkObject> NetworkObjects { get; } = new();
-    internal BiDictionary<Type, ushort> NetworkObjectTypes { get; private set; }
+    internal BiDictionary<Type> NetworkObjectTypes { get; private set; }
     internal PacketProcessor PacketProcessor { get; }
 
     public int Port { get; private set; } = DefaultPort;
@@ -102,7 +102,7 @@ public sealed class NetworkManager
 
     public IEnumerable<T> Query<T>() where T : NetworkObject
     {
-        return NetworkObjects.Values.OfType<T>();
+        return NetworkObjects.Values.OrderBy(x => x.Id).OfType<T>();
     }
 
     public void RegisterNetworkObject<T>() where T : NetworkObject, new()
@@ -170,7 +170,7 @@ public sealed class NetworkManager
         // todo: args
         if (Instance.IsClientOnly)
         {
-            var methodId = Instance._methodTypes.Get(__originalMethod);
+            var methodId = Instance._methodInfos.Get(__originalMethod);
             var packet = new InvokeMethodPacket { NetworkObjectId = __instance.Id, MethodId = methodId };
             Instance.ClientManager.Peer.SendPacket(packet);
         }
@@ -181,7 +181,7 @@ public sealed class NetworkManager
     private void OnInvokeMethod(InvokeMethodPacket packet)
     {
         var instance = NetworkObjects[packet.NetworkObjectId];
-        var methodInfo = _methodTypes.Get(packet.MethodId);
+        var methodInfo = _methodInfos.Get(packet.MethodId);
         var method = _methods[methodInfo];
 
         method.Invoke(instance, null);

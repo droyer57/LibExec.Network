@@ -1,6 +1,13 @@
 namespace LibExec.Network;
 
-internal sealed class BiDictionary<T1, T2> where T1 : notnull where T2 : struct
+internal class BiDictionary<T1> : BiDictionary<T1, ushort> where T1 : notnull
+{
+    public BiDictionary(IEnumerable<T1> data) : base(data)
+    {
+    }
+}
+
+internal class BiDictionary<T1, T2> where T1 : notnull where T2 : struct
 {
     private readonly Dictionary<T2, T1> _data;
     private readonly Dictionary<T1, T2> _reverseData;
