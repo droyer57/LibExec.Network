@@ -1,0 +1,35 @@
+@inherits NetworkComponentBase
+
+@inject NetworkManager NetworkManager
+
+<Stack Horizontal="true">
+    @foreach (var item in NetworkManager.Query<Player>())
+    {
+        <Stack ClassName="@GetPlayerClass(item)">
+            <p>@item.Id</p>
+            <Separator ClassName="mt-1 mb-2 border-t border-gray-400 self-stretch"/>
+            <Stack Horizontal="true">
+                <DefaultButton Icon="Message" IconClassName="text-xs"/>
+                <Separator ClassName="mx-1"/>
+                <DefaultButton Icon="ChromeClose" IconClassName="text-xs"/>
+            </Stack>
+        </Stack>
+    }
+</Stack>
+
+<Stack ClassName="ml-2 border p-2 w-fit">
+    <DefaultButton Text="Add object" Icon="Add" ClassName="mb-2"/>
+    <Stack Horizontal="true" ClassName="justify-evenly gap-2 flex-wrap">
+        <div class="border w-8 h-8"></div>
+    </Stack>
+</Stack>
+
+@code {
+
+    private string GetPlayerClass(Player player)
+    {
+        const string initial = "p-2 border ml-2 items-center mb-2";
+        return player.IsOwner ? $"{initial} border-red-700" : initial;
+    }
+
+}

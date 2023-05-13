@@ -11,7 +11,8 @@
         <div class="flex justify-between items-center">
             @if (Icon != null)
             {
-                <MsIcon Name="@Icon" ClassName="mr-2"/>
+                <MsIcon Name="@Icon" Leading="IconLeading"
+                        ClassName="@(Text != null ? $"mr-2 {IconClassName}" : IconClassName)"/>
             }
             @Text
         </div>
@@ -31,6 +32,12 @@
 
     [Parameter]
     public string? Icon { get; set; }
+
+    [Parameter]
+    public bool? IconLeading { get; set; } = true;
+
+    [Parameter]
+    public string? IconClassName { get; set; }
 
     [Parameter]
     public bool? Disabled { get; set; }

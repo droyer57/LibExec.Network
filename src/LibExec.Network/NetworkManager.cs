@@ -64,8 +64,7 @@ public sealed class NetworkManager
     public bool IsHost => IsServer && IsClient;
     public bool IsOffline => !IsServer && !IsClient;
 
-    public event Action<NetworkObject>? SpawnNetworkObjectEvent;
-    public event Action<NetworkObject>? DestroyNetworkObjectEvent;
+    public event Action<NetworkObject, NetworkObjectEventState>? NetworkObjectEvent;
 
     public void StartServer(int? port = null)
     {
@@ -151,7 +150,7 @@ public sealed class NetworkManager
     {
         PacketProcessor.RegisterCallback(callback);
     }
-    
+
     public void RegisterPacket<T>(Action<T, NetPeer> callback) where T : class, new()
     {
         PacketProcessor.RegisterCallback(callback);
@@ -173,13 +172,13 @@ public sealed class NetworkManager
     internal void AddNetworkObject(NetworkObject networkObject)
     {
         NetworkObjects.Add(networkObject.Id, networkObject);
-        SpawnNetworkObjectEvent?.Invoke(networkObject);
+        NetworkObjectEvent?.Invoke(networkObject, NetworkObjectEventState.Created);
     }
 
     internal void RemoveNetworkObject(NetworkObject networkObject)
     {
         NetworkObjects.Remove(networkObject.Id);
-        DestroyNetworkObjectEvent?.Invoke(networkObject);
+        NetworkObjectEvent?.Invoke(networkObject, NetworkObjectEventState.Destroyed);
     }
 
     [SuppressMessage("ReSharper", "InconsistentNaming")]

@@ -1,26 +1,16 @@
-﻿@implements IDisposable
+﻿@inherits NetworkComponentBase
 
 @page "/"
 
-@inject GameManager GameManager;
+@inject NetworkManager NetworkManager
 
-<DynamicComponent Type="GameManager.View"/>
+<Setup/>
+
+@if (!NetworkManager.IsOffline)
+{
+    <Game/>
+}
 
 @code {
-
-    protected override void OnInitialized()
-    {
-        GameManager.ViewChangedEvent += OnViewChanged;
-    }
-
-    public void Dispose()
-    {
-        GameManager.ViewChangedEvent -= OnViewChanged;
-    }
-
-    private void OnViewChanged()
-    {
-        InvokeAsync(StateHasChanged);
-    }
 
 }

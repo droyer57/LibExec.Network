@@ -11,4 +11,9 @@
         <ProjectReference Include="..\LibExec.Network\LibExec.Network.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <_ContentIncludedByDefault Remove="Components\Views\Game.razor"/>
+        <_ContentIncludedByDefault Remove="Components\Views\Menu.razor"/>
+    </ItemGroup>
+
 </Project>

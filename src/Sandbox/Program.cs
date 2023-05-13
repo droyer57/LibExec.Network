@@ -1,5 +1,4 @@
 using LibExec.Network;
-using Sandbox.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,7 +6,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
-builder.Services.AddSingleton<GameManager>();
 builder.Services.AddSingleton<NetworkManager>();
 
 var app = builder.Build();

@@ -68,7 +68,7 @@ public sealed class PacketProcessor
     {
         RegisterCallback<T>((packet, _) => onReceive(packet));
     }
-    
+
     public void RegisterCallback<T>(Action<T, NetPeer> onReceive) where T : class, new()
     {
         _netSerializer.Register<T>();
