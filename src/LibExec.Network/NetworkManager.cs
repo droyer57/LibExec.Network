@@ -151,6 +151,11 @@ public sealed class NetworkManager
     {
         PacketProcessor.RegisterCallback(callback);
     }
+    
+    public void RegisterPacket<T>(Action<T, NetPeer> callback) where T : class, new()
+    {
+        PacketProcessor.RegisterCallback(callback);
+    }
 
     public void RemovePacket<T>()
     {

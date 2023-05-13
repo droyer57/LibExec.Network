@@ -61,7 +61,7 @@
 
     private bool IsServerRunning => NetworkManager.ServerManager.IsRunning;
     private bool IsClientRunning => NetworkManager.ClientManager.IsRunning;
-    private bool IsClientStarted => NetworkManager.ClientManager.ConnectionState == ConnectionState.Started;
+    private bool IsClientStarted => NetworkManager.ClientManager.IsStarted;
 
     protected override void OnInitialized()
     {

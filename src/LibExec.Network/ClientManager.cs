@@ -58,12 +58,12 @@ public sealed class ClientManager : ManagerBase
         NetworkManager.RemoveNetworkObject(instance);
     }
 
-    public bool IsLocalPeer(NetPeer peer)
+    internal bool IsLocalPeer(NetPeer peer)
     {
         return IsLocalPeerId(peer.Id);
     }
 
-    public bool IsLocalPeerId(int peerId)
+    internal bool IsLocalPeerId(int peerId)
     {
         return IsRunning && Manager.FirstPeer.RemoteId == peerId;
     }

@@ -1,3 +1,4 @@
+using LiteNetLib;
 using LiteNetLib.Utils;
 
 namespace LibExec.Network;
@@ -18,7 +19,7 @@ public sealed class PacketProcessor
     {
         if (!_callbacks.TryGetValue(GetHeader(reader), out var action))
         {
-            throw new ParseException("Undefined packet in NetDataReader");
+            throw new ParseException($"Undefined packet in {nameof(NetDataReader)}");
         }
 
         return action;
@@ -44,17 +45,17 @@ public sealed class PacketProcessor
         _netSerializer.RegisterNestedType(constructor);
     }
 
-    public void ReadAllPackets(NetDataReader reader)
+    public void ReadAllPackets(NetDataReader reader, NetPeer peer)
     {
         while (reader.AvailableBytes > 0)
         {
-            ReadPacket(reader);
+            ReadPacket(reader, peer);
         }
     }
 
-    private void ReadPacket(NetDataReader reader)
+    private void ReadPacket(NetDataReader reader, NetPeer peer)
     {
-        GetCallback(reader)(reader);
+        GetCallback(reader)(reader, peer);
     }
 
     public void Write<T>(NetDataWriter writer, T packet) where T : class, new()
@@ -65,12 +66,17 @@ public sealed class PacketProcessor
 
     public void RegisterCallback<T>(Action<T> onReceive) where T : class, new()
     {
+        RegisterCallback<T>((packet, _) => onReceive(packet));
+    }
+    
+    public void RegisterCallback<T>(Action<T, NetPeer> onReceive) where T : class, new()
+    {
         _netSerializer.Register<T>();
         var packet = new T();
-        _callbacks[typeof(T)] = reader =>
+        _callbacks[typeof(T)] = (reader, peer) =>
         {
             _netSerializer.Deserialize(reader, packet);
-            onReceive(packet);
+            onReceive(packet, peer);
         };
     }
 
@@ -79,5 +85,5 @@ public sealed class PacketProcessor
         return _callbacks.Remove(typeof(T));
     }
 
-    private delegate void RegisterDelegate(NetDataReader reader);
+    private delegate void RegisterDelegate(NetDataReader reader, NetPeer peer);
 }

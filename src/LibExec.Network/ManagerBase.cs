@@ -73,6 +73,6 @@ public abstract class ManagerBase
     protected virtual void OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channel,
         DeliveryMethod deliveryMethod)
     {
-        NetworkManager.PacketProcessor.ReadAllPackets(reader);
+        NetworkManager.PacketProcessor.ReadAllPackets(reader, peer);
     }
 }
