@@ -20,10 +20,10 @@ internal sealed class Reflection
         var entryAssembly = Assembly.GetEntryAssembly() ?? throw new Exception("Cannot get entry assembly");
         var executingAssembly = Assembly.GetExecutingAssembly();
 
-        NetworkObjectTypes = GetTypesWithBaseType<NetworkObject>(entryAssembly).ToArray();
+        NetworkObjectTypes = entryAssembly.GetTypesWithBaseType<NetworkObject>().ToArray();
 
-        var executingPacketTypes = GetTypesWithAttribute<PacketAttribute>(executingAssembly);
-        var entryPacketTypes = GetTypesWithAttribute<PacketAttribute>(entryAssembly);
+        var executingPacketTypes = executingAssembly.GetTypesWithAttribute<PacketAttribute>();
+        var entryPacketTypes = entryAssembly.GetTypesWithAttribute<PacketAttribute>();
         PacketTypes = executingPacketTypes.Concat(entryPacketTypes).ToArray();
 
         PlayerType = NetworkObjectTypes.FirstOrDefault(x => x.GetCustomAttribute<NetworkPlayerAttribute>() != null);
@@ -31,11 +31,23 @@ internal sealed class Reflection
         Activator.CreateInstance(typeof(InternalNetworkInit), true);
         var networkInitClassType = entryAssembly.GetTypes().First(x => x.Name == NetworkInitClassName);
         Activator.CreateInstance(networkInitClassType, true);
+
+        LoadMethods();
     }
 
     public static Type[] NetworkObjectTypes { get; private set; } = null!;
     public static Type[] PacketTypes { get; private set; } = null!;
     public static Type? PlayerType { get; private set; }
+    public static Dictionary<Type, MethodInfo[]> ServerMethodInfos { get; } = new();
+
+    private static void LoadMethods()
+    {
+        foreach (var type in NetworkObjectTypes)
+        {
+            var methods = type.GetMethodsWithAttribute<ServerAttribute>().ToArray();
+            ServerMethodInfos[type] = methods;
+        }
+    }
 
     public static Action<object, object[]?> CreateMethod(MethodInfo methodInfo)
     {
@@ -54,15 +66,5 @@ internal sealed class Reflection
 
         var call = Expression.Call(instanceCast, methodInfo, parametersCasts);
         return Expression.Lambda<Action<object, object[]?>>(call, instance, parameters).Compile();
-    }
-
-    private static IEnumerable<Type> GetTypesWithBaseType<T>(Assembly assembly)
-    {
-        return assembly.GetTypes().Where(x => x.BaseType == typeof(T));
-    }
-
-    private static IEnumerable<Type> GetTypesWithAttribute<T>(Assembly assembly) where T : Attribute
-    {
-        return assembly.GetTypes().Where(x => x.GetCustomAttribute<T>() != null);
     }
 }

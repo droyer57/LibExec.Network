@@ -2,7 +2,6 @@
 using System.Reflection;
 using HarmonyLib;
 using LiteNetLib;
-using LiteNetLib.Utils;
 
 namespace LibExec.Network;
 
@@ -15,11 +14,8 @@ public sealed class NetworkManager
 
     private readonly Harmony _harmony = new(Key);
     private readonly Dictionary<MethodInfo, Action<object, object[]?>> _methods = new();
-
     private readonly Dictionary<Type, BiDictionary<MethodInfo, ushort>> _methodTypes = new();
     private readonly Dictionary<Type, Func<NetworkObject>> _networkObjectsCache = new();
-    private readonly List<MethodInfo> _serverMethodInfos = new();
-    internal readonly Dictionary<uint, NetworkObject> NetworkObjects = new();
 
     public NetworkManager()
     {
@@ -42,12 +38,20 @@ public sealed class NetworkManager
 
         RegisterPacket<InvokeMethodPacket>(OnInvokeMethod);
 
-        LoadMethods();
+        foreach (var methods in Reflection.ServerMethodInfos)
+        {
+            _methodTypes[methods.Key] = new BiDictionary<MethodInfo, ushort>(methods.Value);
+            foreach (var method in methods.Value)
+            {
+                _methods.Add(method, Reflection.CreateMethod(method));
+            }
+        }
+
         PatchServerMethods();
     }
 
+    internal Dictionary<uint, NetworkObject> NetworkObjects { get; } = new();
     internal BiDictionary<Type, ushort> NetworkObjectTypes { get; private set; }
-
     internal PacketProcessor PacketProcessor { get; }
 
     public int Port { get; private set; } = DefaultPort;
@@ -108,29 +112,11 @@ public sealed class NetworkManager
         _networkObjectsCache.Add(typeof(T), () => new T());
     }
 
-    private void LoadMethods()
-    {
-        foreach (var type in Reflection.NetworkObjectTypes)
-        {
-            var methods = type.GetMethods().Where(x => x.GetCustomAttribute<ServerAttribute>() != null).ToArray();
-            _methodTypes[type] = new BiDictionary<MethodInfo, ushort>(methods);
-
-            foreach (var method in methods)
-            {
-                if (method.GetCustomAttribute<ServerAttribute>() != null)
-                {
-                    _serverMethodInfos.Add(method);
-                    _methods.Add(method, Reflection.CreateMethod(method));
-                }
-            }
-        }
-    }
-
     private void PatchServerMethods()
     {
-        var serverPatch = GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
-            .First(x => x.Name == nameof(ServerPatch));
-        foreach (var method in _serverMethodInfos)
+        var serverPatch = GetType().GetMethodWithName(nameof(ServerPatch));
+        var methods = Reflection.ServerMethodInfos.Values.SelectMany(x => x);
+        foreach (var method in methods)
         {
             _harmony.Patch(method, new HarmonyMethod(serverPatch));
         }
@@ -188,10 +174,7 @@ public sealed class NetworkManager
         {
             var methodId = Instance._methodTypes[__instance.GetType()].Get(__originalMethod);
             var packet = new InvokeMethodPacket { NetworkObjectId = __instance.Id, MethodId = methodId };
-
-            var writer = new NetDataWriter();
-            Instance.PacketProcessor.Write(writer, packet);
-            Instance.ClientManager.Manager.FirstPeer.Send(writer, DeliveryMethod.ReliableOrdered);
+            Instance.ClientManager.Peer.SendPacket(packet);
         }
 
         return Instance.IsServer;

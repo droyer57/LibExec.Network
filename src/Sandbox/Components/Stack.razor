@@ -1,6 +1,6 @@
 @inherits DefaultComponent
 
-<div class="flex @_internalClassName @ClassName" style="@Style">
+<div class="flex @_internalClassName @ClassName @AdditionalClassName" style="@Style">
     @ChildContent
 </div>
 
@@ -13,9 +13,9 @@
     }
 
     [Parameter]
-    public RenderFragment? ChildContent { get; set; }
+    public RenderFragment? ChildContent { get; init; }
 
     [Parameter]
-    public bool? Horizontal { get; set; }
+    public bool? Horizontal { get; init; }
 
 }

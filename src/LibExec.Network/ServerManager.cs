@@ -1,5 +1,4 @@
 using LiteNetLib;
-using LiteNetLib.Utils;
 
 namespace LibExec.Network;
 
@@ -88,9 +87,7 @@ public sealed class ServerManager : ManagerBase
             OwnerId = networkObject.OwnerId
         };
 
-        var writer = new NetDataWriter();
-        NetworkManager.PacketProcessor.Write(writer, packet);
-        peer.Send(writer, DeliveryMethod.ReliableOrdered);
+        peer.SendPacket(packet);
     }
 
     internal void SpawnWithInit(NetworkObject networkObject, NetPeer? owner)
@@ -110,9 +107,7 @@ public sealed class ServerManager : ManagerBase
 
         foreach (var peer in GetPeers(excludePeer))
         {
-            var writer = new NetDataWriter();
-            NetworkManager.PacketProcessor.Write(writer, packet);
-            peer.Send(writer, DeliveryMethod.ReliableOrdered);
+            peer.SendPacket(packet);
         }
     }
 
