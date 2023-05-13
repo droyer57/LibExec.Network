@@ -65,7 +65,8 @@ public sealed class NetworkManager
     public bool IsHost => IsServer && IsClient;
     public bool IsOffline => !IsServer && !IsClient;
 
-    public event Action<NetworkObject, NetworkObjectEventState>? NetworkObjectEvent;
+    public event Action<NetworkObject, NetworkObjectEvent>? NetworkObjectEvent;
+    public event Action<NetworkEvent>? NetworkEvent;
 
     public void StartServer(int? port = null)
     {
@@ -154,18 +155,19 @@ public sealed class NetworkManager
     internal void AddNetworkObject(NetworkObject networkObject)
     {
         NetworkObjects.Add(networkObject.Id, networkObject);
-        NetworkObjectEvent?.Invoke(networkObject, NetworkObjectEventState.Created);
+        NetworkObjectEvent?.Invoke(networkObject, Network.NetworkObjectEvent.Spawned);
     }
 
     internal void RemoveNetworkObject(NetworkObject networkObject)
     {
         NetworkObjects.Remove(networkObject.Id);
-        NetworkObjectEvent?.Invoke(networkObject, NetworkObjectEventState.Destroyed);
+        NetworkObjectEvent?.Invoke(networkObject, Network.NetworkObjectEvent.Destroyed);
     }
 
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     private static bool ServerPatch(NetworkObject __instance, MethodInfo __originalMethod, object[] __args)
     {
+        // todo: args
         if (Instance.IsClientOnly)
         {
             var methodId = Instance._methodTypes.Get(__originalMethod);
@@ -183,5 +185,6 @@ public sealed class NetworkManager
         var method = _methods[methodInfo];
 
         method.Invoke(instance, null);
+        NetworkEvent?.Invoke(Network.NetworkEvent.ServerRpcCalled);
     }
 }

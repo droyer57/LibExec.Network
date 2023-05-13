@@ -12,6 +12,7 @@ public abstract class NetworkComponentBase : ComponentBase, IDisposable
         NetworkManager.ServerManager.ConnectionStateChangedEvent -= OnServerConnectionStateChanged;
         NetworkManager.ClientManager.ConnectionStateChangedEvent -= OnClientConnectionStateChanged;
         NetworkManager.NetworkObjectEvent -= OnNetworkObjectEvent;
+        NetworkManager.NetworkEvent -= OnNetworkEvent;
     }
 
     protected override void OnAfterRender(bool firstRender)
@@ -21,6 +22,7 @@ public abstract class NetworkComponentBase : ComponentBase, IDisposable
         NetworkManager.ServerManager.ConnectionStateChangedEvent += OnServerConnectionStateChanged;
         NetworkManager.ClientManager.ConnectionStateChangedEvent += OnClientConnectionStateChanged;
         NetworkManager.NetworkObjectEvent += OnNetworkObjectEvent;
+        NetworkManager.NetworkEvent += OnNetworkEvent;
     }
 
     private void OnServerConnectionStateChanged(ConnectionState state)
@@ -33,7 +35,12 @@ public abstract class NetworkComponentBase : ComponentBase, IDisposable
         InvokeAsync(StateHasChanged);
     }
 
-    private void OnNetworkObjectEvent(NetworkObject networkObject, NetworkObjectEventState state)
+    private void OnNetworkObjectEvent(NetworkObject networkObject, NetworkObjectEvent state)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnNetworkEvent(NetworkEvent networkEvent)
     {
         InvokeAsync(StateHasChanged);
     }
