@@ -14,7 +14,7 @@ public sealed class NetworkManager
 
     private readonly Harmony _harmony = new(Key);
     private readonly Dictionary<MethodInfo, Action<object, object[]?>> _methods = new();
-    private readonly Dictionary<Type, BiDictionary<MethodInfo, ushort>> _methodTypes = new();
+    private readonly BiDictionary<MethodInfo, ushort> _methodTypes;
     private readonly Dictionary<Type, Func<NetworkObject>> _networkObjectsCache = new();
 
     public NetworkManager()
@@ -27,8 +27,8 @@ public sealed class NetworkManager
         Instance = this;
 
         var _ = new Reflection();
-        PacketProcessor = new PacketProcessor();
 
+        PacketProcessor = new PacketProcessor();
         PacketProcessor.RegisterType<NetworkObjectType>();
 
         NetworkObjectTypes = new BiDictionary<Type, ushort>(Reflection.NetworkObjectTypes);
@@ -38,13 +38,10 @@ public sealed class NetworkManager
 
         RegisterPacket<InvokeMethodPacket>(OnInvokeMethod);
 
-        foreach (var methods in Reflection.ServerMethodInfos)
+        _methodTypes = new BiDictionary<MethodInfo, ushort>(Reflection.ServerMethodInfos);
+        foreach (var method in Reflection.ServerMethodInfos)
         {
-            _methodTypes[methods.Key] = new BiDictionary<MethodInfo, ushort>(methods.Value);
-            foreach (var method in methods.Value)
-            {
-                _methods.Add(method, Reflection.CreateMethod(method));
-            }
+            _methods.Add(method, Reflection.CreateMethod(method));
         }
 
         PatchServerMethods();
@@ -115,8 +112,7 @@ public sealed class NetworkManager
     private void PatchServerMethods()
     {
         var serverPatch = GetType().GetMethodWithName(nameof(ServerPatch));
-        var methods = Reflection.ServerMethodInfos.Values.SelectMany(x => x);
-        foreach (var method in methods)
+        foreach (var method in Reflection.ServerMethodInfos)
         {
             _harmony.Patch(method, new HarmonyMethod(serverPatch));
         }
@@ -172,7 +168,7 @@ public sealed class NetworkManager
     {
         if (Instance.IsClientOnly)
         {
-            var methodId = Instance._methodTypes[__instance.GetType()].Get(__originalMethod);
+            var methodId = Instance._methodTypes.Get(__originalMethod);
             var packet = new InvokeMethodPacket { NetworkObjectId = __instance.Id, MethodId = methodId };
             Instance.ClientManager.Peer.SendPacket(packet);
         }
@@ -183,7 +179,7 @@ public sealed class NetworkManager
     private void OnInvokeMethod(InvokeMethodPacket packet)
     {
         var instance = NetworkObjects[packet.NetworkObjectId];
-        var methodInfo = _methodTypes[instance.GetType()].Get(packet.MethodId);
+        var methodInfo = _methodTypes.Get(packet.MethodId);
         var method = _methods[methodInfo];
 
         method.Invoke(instance, null);

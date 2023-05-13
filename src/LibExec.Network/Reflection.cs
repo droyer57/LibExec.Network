@@ -28,26 +28,17 @@ internal sealed class Reflection
 
         PlayerType = NetworkObjectTypes.FirstOrDefault(x => x.GetCustomAttribute<NetworkPlayerAttribute>() != null);
 
+        ServerMethodInfos = NetworkObjectTypes.SelectMany(x => x.GetMethodsWithAttribute<ServerAttribute>()).ToArray();
+
         Activator.CreateInstance(typeof(InternalNetworkInit), true);
         var networkInitClassType = entryAssembly.GetTypes().First(x => x.Name == NetworkInitClassName);
         Activator.CreateInstance(networkInitClassType, true);
-
-        LoadMethods();
     }
 
     public static Type[] NetworkObjectTypes { get; private set; } = null!;
     public static Type[] PacketTypes { get; private set; } = null!;
     public static Type? PlayerType { get; private set; }
-    public static Dictionary<Type, MethodInfo[]> ServerMethodInfos { get; } = new();
-
-    private static void LoadMethods()
-    {
-        foreach (var type in NetworkObjectTypes)
-        {
-            var methods = type.GetMethodsWithAttribute<ServerAttribute>().ToArray();
-            ServerMethodInfos[type] = methods;
-        }
-    }
+    public static MethodInfo[] ServerMethodInfos { get; private set; } = null!;
 
     public static Action<object, object[]?> CreateMethod(MethodInfo methodInfo)
     {
