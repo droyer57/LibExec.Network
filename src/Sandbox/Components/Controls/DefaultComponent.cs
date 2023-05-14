@@ -4,7 +4,7 @@ namespace Sandbox.Components.Controls;
 
 public abstract class DefaultComponent : ComponentBase
 {
-    [Parameter] public string? ClassName { get; init; }
-    [Parameter] public string? AdditionalClassName { get; init; }
-    [Parameter] public string? Style { get; init; }
+    [Parameter] public string? ClassName { get; set; }
+    [Parameter] public string? AdditionalClassName { get; set; }
+    [Parameter] public string? Style { get; set; }
 }

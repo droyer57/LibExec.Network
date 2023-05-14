@@ -7,12 +7,14 @@ public abstract class NetworkComponentBase : ComponentBase, IDisposable
 {
     [Inject] private NetworkManager NetworkManager { get; init; } = null!;
 
-    public void Dispose()
+    public virtual void Dispose()
     {
         NetworkManager.ServerManager.ConnectionStateChangedEvent -= OnServerConnectionStateChanged;
         NetworkManager.ClientManager.ConnectionStateChangedEvent -= OnClientConnectionStateChanged;
         NetworkManager.NetworkObjectEvent -= OnNetworkObjectEvent;
         NetworkManager.NetworkEvent -= OnNetworkEvent;
+
+        OnStop();
     }
 
     protected override void OnAfterRender(bool firstRender)
@@ -23,6 +25,16 @@ public abstract class NetworkComponentBase : ComponentBase, IDisposable
         NetworkManager.ClientManager.ConnectionStateChangedEvent += OnClientConnectionStateChanged;
         NetworkManager.NetworkObjectEvent += OnNetworkObjectEvent;
         NetworkManager.NetworkEvent += OnNetworkEvent;
+
+        OnStart();
+    }
+
+    protected virtual void OnStart()
+    {
+    }
+
+    protected virtual void OnStop()
+    {
     }
 
     private void OnServerConnectionStateChanged(ConnectionState state)
@@ -40,7 +52,7 @@ public abstract class NetworkComponentBase : ComponentBase, IDisposable
         InvokeAsync(StateHasChanged);
     }
 
-    private void OnNetworkEvent(NetworkEvent networkEvent)
+    private void OnNetworkEvent()
     {
         InvokeAsync(StateHasChanged);
     }

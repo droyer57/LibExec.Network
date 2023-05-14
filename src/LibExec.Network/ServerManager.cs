@@ -6,7 +6,7 @@ public sealed class ServerManager : ManagerBase
 {
     private uint _nextId;
 
-    public NetPeer[] Peers { get; private set; } = null!;
+    public NetConnection[] Connections { get; private set; } = null!;
 
     internal override void Start()
     {
@@ -40,9 +40,9 @@ public sealed class ServerManager : ManagerBase
 
     protected override void OnPeerConnected(NetPeer peer)
     {
-        Peers = Manager.ConnectedPeerList.ToArray();
+        UpdateConnections();
 
-        if (!NetworkManager.ClientManager.IsLocalPeer(peer))
+        if (!peer.IsLocal())
         {
             foreach (var networkObject in NetworkManager.NetworkObjects.Values)
             {
@@ -61,7 +61,7 @@ public sealed class ServerManager : ManagerBase
 
     protected override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
-        Peers = Manager.ConnectedPeerList.ToArray();
+        UpdateConnections();
 
         var data = NetworkManager.NetworkObjects.Where(x => x.Value.OwnerId == peer.Id);
         foreach (var item in data)
@@ -113,18 +113,32 @@ public sealed class ServerManager : ManagerBase
 
     private IEnumerable<NetPeer> GetPeers(NetPeer? excludePeer = null)
     {
-        foreach (var peer in Manager.ConnectedPeerList.Where(x => x != excludePeer))
-        {
-            if (NetworkManager.ClientManager.IsLocalPeer(peer)) continue;
-
-            yield return peer;
-        }
+        return Manager.ConnectedPeerList.Where(x => x != excludePeer).Where(peer => !peer.IsLocal());
     }
 
     private void InitNetworkObject(NetworkObject networkObject, NetPeer? owner)
     {
         networkObject.Id = _nextId++;
         networkObject.OwnerId = owner?.Id ?? -1;
-        networkObject.Owner = owner;
+        networkObject.Owner = NetConnection.Create(owner);
+    }
+
+    public void SendPacketToAll<T>(T packet, DeliveryMethod deliveryMethod = DeliveryMethod.ReliableOrdered,
+        NetPeer? excludePeer = null, bool excludeLocalPeer = true) where T : class, new()
+    {
+        foreach (var peer in Manager.ConnectedPeerList.Where(x => x != excludePeer))
+        {
+            if (excludeLocalPeer && peer.IsLocal())
+            {
+                continue;
+            }
+
+            peer.SendPacket(packet, deliveryMethod);
+        }
+    }
+
+    private void UpdateConnections()
+    {
+        Connections = Manager.ConnectedPeerList.Select(x => new NetConnection(x)).ToArray();
     }
 }

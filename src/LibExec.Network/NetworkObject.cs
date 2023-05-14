@@ -1,5 +1,3 @@
-using LiteNetLib;
-
 namespace LibExec.Network;
 
 public abstract class NetworkObject
@@ -7,7 +5,7 @@ public abstract class NetworkObject
     public uint Id { get; internal set; }
     internal int OwnerId { get; set; }
     public bool IsOwner => ClientManager.IsLocalPeerId(OwnerId);
-    public NetPeer? Owner { get; internal set; }
+    public NetConnection? Owner { get; internal set; }
 
     private NetworkManager NetworkManager => NetworkManager.Instance;
     private ClientManager ClientManager => NetworkManager.ClientManager;
@@ -15,10 +13,10 @@ public abstract class NetworkObject
 
     public bool IsValid => NetworkManager.NetworkObjects.ContainsKey(Id);
 
-    public void Spawn(NetPeer? owner = null)
+    public void Spawn(NetConnection? owner = null)
     {
         NetworkManager.EnsureMethodIsCalledByServer();
-        ServerManager.SpawnWithInit(this, owner);
+        ServerManager.SpawnWithInit(this, owner?.Peer);
     }
 
     public void Destroy()

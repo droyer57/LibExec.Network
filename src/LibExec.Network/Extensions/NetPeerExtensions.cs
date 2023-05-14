@@ -3,8 +3,10 @@ using LiteNetLib.Utils;
 
 namespace LibExec.Network;
 
-public static class NetPeerExtensions
+internal static class NetPeerExtensions
 {
+    private static NetworkManager NetworkManager => NetworkManager.Instance;
+
     public static void SendPacket<T>(this NetPeer peer, T packet,
         DeliveryMethod deliveryMethod = DeliveryMethod.ReliableOrdered) where T : class, new()
     {
@@ -13,12 +15,8 @@ public static class NetPeerExtensions
         peer.Send(writer, deliveryMethod);
     }
 
-    public static void SendPacket<T>(this IEnumerable<NetPeer> peers, T packet, NetPeer? excludePeer = null)
-        where T : class, new()
+    public static bool IsLocal(this NetPeer peer)
     {
-        foreach (var peer in peers.Where(x => x != excludePeer))
-        {
-            peer.SendPacket(packet);
-        }
+        return NetworkManager.ClientManager.IsLocalPeer(peer);
     }
 }

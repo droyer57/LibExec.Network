@@ -2,22 +2,32 @@
 
 @inject NetworkManager NetworkManager
 
+@if (NetworkManager.IsClient)
+{
+    <Stack ClassName="border p-2 w-fit flex-wrap gap-1 mb-2 ml-2">
+        <p>Send message with packet</p>
+        <TextBox Placeholder="Message" @bind-Value="_message"/>
+        <DefaultButton Icon="Send" Text="Send" OnClick="SendPacket"/>
+    </Stack>
+}
+
 <Stack Horizontal="true">
-    @foreach (var item in NetworkManager.Query<Player>())
+    @foreach (var player in NetworkManager.Query<Player>())
     {
-        <Stack ClassName="p-2 border ml-2 items-center mb-2" AdditionalClassName="@GetPlayerClass(item)">
-            <p>@item.Id</p>
+        <Stack ClassName="p-2 border ml-2 mb-2" AdditionalClassName="@GetPlayerClass(player)">
+            <p class="text-center">@player.Id</p>
+
             <Separator ClassName="mt-1 mb-2 border-t border-gray-400 self-stretch"/>
-            <Stack Horizontal="true">
-                <DefaultButton Icon="Message" IconClassName="text-xs"/>
-                <Separator ClassName="mx-1"/>
-                <DefaultButton Icon="ChromeClose" IconClassName="text-xs"/>
+            <Stack ClassName="flex-wrap gap-1">
+                <DefaultButton Icon="Unknown" Text="Unknown"/>
+                <Separator ClassName="border-t border-gray-400 my-1"/>
+                <DefaultButton Icon="ChromeClose" Text="Disconnect" IconClassName="text-xs"/>
             </Stack>
         </Stack>
     }
 </Stack>
 
-<Stack ClassName="ml-2 border p-2 w-fit">
+<Stack ClassName="ml-2 border p-2 w-fit mb-1">
     <PrimaryButton Text="Add object" Icon="Add" OnClick="AddObject"/>
     <Stack Horizontal="true" ClassName="justify-evenly gap-2 flex-wrap">
         @foreach (var entity in NetworkManager.Query<Entity>())
@@ -31,16 +41,55 @@
     </Stack>
 </Stack>
 
+<Stack ClassName="ml-2">
+    @foreach (var item in _packetsMessage)
+    {
+        <p>@item</p>
+    }
+</Stack>
+
 @code {
+
+    private List<string> _packetsMessage = new();
+    private string _message = null!;
+
+    protected override void OnStart()
+    {
+        NetworkManager.RegisterPacket<MessagePacket>(OnMessagePacket);
+    }
+
+    protected override void OnStop()
+    {
+        NetworkManager.RemovePacket<MessagePacket>();
+    }
 
     private string GetPlayerClass(Player player)
     {
         return player.IsOwner ? "border-red-700" : string.Empty;
     }
 
+    private void SendPacket()
+    {
+        var player = NetworkManager.Query<Player>().First(x => x.IsOwner); // todo: get local player in NetworkManager
+        var packet = new MessagePacket { Text = _message, SenderId = player.Id.ToString() };
+
+        NetworkManager.ClientManager.SendPacket(packet);
+        _message = string.Empty;
+    }
+
+    private void OnMessagePacket(MessagePacket packet, NetConnection connection)
+    {
+        if (NetworkManager.IsServer)
+        {
+            NetworkManager.ServerManager.SendPacketToAll(packet);
+        }
+
+        _packetsMessage.Add($"{packet.SenderId}: {packet.Text}");
+    }
+
     private void AddObject()
     {
-        new Entity().Spawn();
+        new Entity().Spawn(); // todo: NetworkManager.Spawn<Entity>(); ?
     }
 
     private void DestroyObject(Entity entity)

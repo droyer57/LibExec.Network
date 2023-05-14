@@ -11,7 +11,7 @@ public sealed class ClientManager : ManagerBase
     }
 
     public string Address { get; internal set; } = NetworkManager.LocalAddress;
-    public NetPeer Peer => Manager.FirstPeer;
+    public NetConnection Connection { get; private set; } = null!;
 
     internal override void Start()
     {
@@ -31,6 +31,7 @@ public sealed class ClientManager : ManagerBase
 
     protected override void OnPeerConnected(NetPeer peer)
     {
+        Connection = new NetConnection(peer);
         ConnectionState = ConnectionState.Started;
     }
 
@@ -46,7 +47,7 @@ public sealed class ClientManager : ManagerBase
         instance.OwnerId = packet.OwnerId;
         if (instance.IsOwner)
         {
-            instance.Owner = Manager.FirstPeer;
+            instance.Owner = NetConnection.Create(Manager.FirstPeer);
         }
 
         NetworkManager.AddNetworkObject(instance);
@@ -60,11 +61,17 @@ public sealed class ClientManager : ManagerBase
 
     internal bool IsLocalPeer(NetPeer peer)
     {
-        return IsLocalPeerId(peer.Id);
+        return IsLocalPeerId(NetworkManager.IsServer ? peer.Id : peer.RemoteId);
     }
 
     internal bool IsLocalPeerId(int peerId)
     {
         return IsRunning && Manager.FirstPeer.RemoteId == peerId;
+    }
+
+    public void SendPacket<T>(T packet, DeliveryMethod deliveryMethod = DeliveryMethod.ReliableOrdered)
+        where T : class, new()
+    {
+        Connection.SendPacket(packet, deliveryMethod);
     }
 }

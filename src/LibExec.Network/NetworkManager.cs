@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using HarmonyLib;
-using LiteNetLib;
 
 namespace LibExec.Network;
 
@@ -66,7 +65,7 @@ public sealed class NetworkManager
     public bool IsOffline => !IsServer && !IsClient;
 
     public event Action<NetworkObject, NetworkObjectEvent>? NetworkObjectEvent;
-    public event Action<NetworkEvent>? NetworkEvent;
+    public event Action? NetworkEvent;
 
     public void StartServer(int? port = null)
     {
@@ -134,7 +133,7 @@ public sealed class NetworkManager
         PacketProcessor.RegisterCallback(callback);
     }
 
-    public void RegisterPacket<T>(Action<T, NetPeer> callback) where T : class, new()
+    public void RegisterPacket<T>(Action<T, NetConnection> callback) where T : class, new()
     {
         PacketProcessor.RegisterCallback(callback);
     }
@@ -172,7 +171,7 @@ public sealed class NetworkManager
         {
             var methodId = Instance._methodInfos.Get(__originalMethod);
             var packet = new InvokeMethodPacket { NetworkObjectId = __instance.Id, MethodId = methodId };
-            Instance.ClientManager.Peer.SendPacket(packet);
+            Instance.ClientManager.Connection.SendPacket(packet);
         }
 
         return Instance.IsServer;
@@ -185,6 +184,10 @@ public sealed class NetworkManager
         var method = _methods[methodInfo];
 
         method.Invoke(instance, null);
-        NetworkEvent?.Invoke(Network.NetworkEvent.ServerRpcCalled);
+    }
+
+    internal void InvokeNetworkEvent()
+    {
+        NetworkEvent?.Invoke();
     }
 }

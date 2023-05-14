@@ -1,4 +1,3 @@
-using LiteNetLib;
 using LiteNetLib.Utils;
 
 namespace LibExec.Network;
@@ -45,17 +44,17 @@ public sealed class PacketProcessor
         _netSerializer.RegisterNestedType(constructor);
     }
 
-    public void ReadAllPackets(NetDataReader reader, NetPeer peer)
+    public void ReadAllPackets(NetDataReader reader, NetConnection connection)
     {
         while (reader.AvailableBytes > 0)
         {
-            ReadPacket(reader, peer);
+            ReadPacket(reader, connection);
         }
     }
 
-    private void ReadPacket(NetDataReader reader, NetPeer peer)
+    private void ReadPacket(NetDataReader reader, NetConnection connection)
     {
-        GetCallback(reader)(reader, peer);
+        GetCallback(reader)(reader, connection);
     }
 
     public void Write<T>(NetDataWriter writer, T packet) where T : class, new()
@@ -69,7 +68,7 @@ public sealed class PacketProcessor
         RegisterCallback<T>((packet, _) => onReceive(packet));
     }
 
-    public void RegisterCallback<T>(Action<T, NetPeer> onReceive) where T : class, new()
+    public void RegisterCallback<T>(Action<T, NetConnection> onReceive) where T : class, new()
     {
         _netSerializer.Register<T>();
         var packet = new T();
@@ -85,5 +84,5 @@ public sealed class PacketProcessor
         return _callbacks.Remove(typeof(T));
     }
 
-    private delegate void RegisterDelegate(NetDataReader reader, NetPeer peer);
+    private delegate void RegisterDelegate(NetDataReader reader, NetConnection connection);
 }
