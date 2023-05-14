@@ -26,4 +26,9 @@ public sealed class NetConnection
     {
         Peer.SendPacket(packet, deliveryMethod);
     }
+
+    public void Disconnect()
+    {
+        Peer.Disconnect();
+    }
 }

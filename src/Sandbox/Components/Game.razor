@@ -21,7 +21,8 @@
             <Stack ClassName="flex-wrap gap-1">
                 <DefaultButton Icon="Unknown" Text="Unknown"/>
                 <Separator ClassName="border-t border-gray-400 my-1"/>
-                <DefaultButton Icon="ChromeClose" Text="Disconnect" IconClassName="text-xs"/>
+                <DefaultButton Icon="ChromeClose" Text="Disconnect" IconClassName="text-xs"
+                               OnClick="() => DisconnectPlayer(player)" Enabled="@(player.Owner != null)"/>
             </Stack>
         </Stack>
     }
@@ -104,6 +105,11 @@
     private void DestroyObject(Entity entity)
     {
         entity.Destroy();
+    }
+
+    private void DisconnectPlayer(Player player)
+    {
+        player.Owner?.Disconnect();
     }
 
 }
