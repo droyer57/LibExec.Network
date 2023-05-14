@@ -13,7 +13,7 @@ public sealed class NetworkManager
 
     private readonly Harmony _harmony = new(Key);
     private readonly BiDictionary<MethodInfo> _methodInfos;
-    private readonly Dictionary<MethodInfo, Action<object, object[]?>> _methods = new();
+    private readonly Dictionary<MethodInfo, Action<object, object[]?>> _methods;
     private readonly Dictionary<Type, Func<NetworkObject>> _networkObjectsCache = new();
 
     public NetworkManager()
@@ -32,13 +32,11 @@ public sealed class NetworkManager
         ServerManager = new ServerManager();
         ClientManager = new ClientManager();
 
-        _methodInfos = new BiDictionary<MethodInfo>(Reflection.ServerMethodInfos);
-        foreach (var method in Reflection.ServerMethodInfos)
-        {
-            _methods.Add(method, Reflection.CreateMethod(method));
-        }
+        var methods = Reflection.ServerMethodInfos.Concat(Reflection.MulticastMethodInfos).ToArray();
+        _methodInfos = new BiDictionary<MethodInfo>(methods);
+        _methods = methods.ToDictionary(x => x, Reflection.CreateMethod);
 
-        PatchServerMethods();
+        PatchMethods();
     }
 
     internal Dictionary<uint, NetworkObject> NetworkObjects { get; } = new();
@@ -105,12 +103,18 @@ public sealed class NetworkManager
         _networkObjectsCache.Add(typeof(T), () => new T());
     }
 
-    private void PatchServerMethods()
+    private void PatchMethods()
     {
-        var serverPatch = GetType().GetMethodWithName(nameof(ServerPatch));
+        var serverPatch = GetType().GetMethodByName(nameof(ServerPatch));
         foreach (var method in Reflection.ServerMethodInfos)
         {
             _harmony.Patch(method, new HarmonyMethod(serverPatch));
+        }
+
+        var multicastPatch = GetType().GetMethodByName(nameof(MulticastPatch));
+        foreach (var method in Reflection.MulticastMethodInfos)
+        {
+            _harmony.Patch(method, new HarmonyMethod(multicastPatch));
         }
     }
 
@@ -169,12 +173,24 @@ public sealed class NetworkManager
         // todo: args
         if (Instance.IsClientOnly)
         {
-            var methodId = Instance._methodInfos.Get(__originalMethod);
-            var packet = new InvokeMethodPacket { NetworkObjectId = __instance.Id, MethodId = methodId };
+            var packet = GetInvokeMethodPacket(__originalMethod, __instance);
             Instance.ClientManager.Connection.SendPacket(packet);
         }
 
         return Instance.IsServer;
+    }
+
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
+    private static bool MulticastPatch(NetworkObject __instance, MethodInfo __originalMethod, object[] __args)
+    {
+        if (Instance.IsClientOnly)
+        {
+            return true;
+        }
+
+        var packet = GetInvokeMethodPacket(__originalMethod, __instance);
+        Instance.ServerManager.SendPacketToAll(packet, excludeLocalConnection: true);
+        return true;
     }
 
     internal void OnInvokeMethod(InvokeMethodPacket packet)
@@ -189,5 +205,11 @@ public sealed class NetworkManager
     internal void InvokeNetworkEvent()
     {
         NetworkEvent?.Invoke();
+    }
+
+    private static InvokeMethodPacket GetInvokeMethodPacket(MethodInfo methodInfo, NetworkObject networkObject)
+    {
+        var methodId = Instance._methodInfos.Get(methodInfo);
+        return new InvokeMethodPacket { NetworkObjectId = networkObject.Id, MethodId = methodId };
     }
 }

@@ -20,15 +20,17 @@ internal sealed class Reflection
         var entryAssembly = Assembly.GetEntryAssembly() ?? throw new Exception("Cannot get entry assembly");
         var executingAssembly = Assembly.GetExecutingAssembly();
 
-        NetworkObjectTypes = entryAssembly.GetTypesWithBaseType<NetworkObject>().ToArray();
+        NetworkObjectTypes = entryAssembly.GetTypesByBaseType<NetworkObject>().ToArray();
 
-        var executingPacketTypes = executingAssembly.GetTypesWithAttribute<PacketAttribute>();
-        var entryPacketTypes = entryAssembly.GetTypesWithAttribute<PacketAttribute>();
+        var executingPacketTypes = executingAssembly.GetTypesByAttribute<PacketAttribute>();
+        var entryPacketTypes = entryAssembly.GetTypesByAttribute<PacketAttribute>();
         PacketTypes = executingPacketTypes.Concat(entryPacketTypes).ToArray();
 
         PlayerType = NetworkObjectTypes.FirstOrDefault(x => x.GetCustomAttribute<NetworkPlayerAttribute>() != null);
 
-        ServerMethodInfos = NetworkObjectTypes.SelectMany(x => x.GetMethodsWithAttribute<ServerAttribute>()).ToArray();
+        ServerMethodInfos = NetworkObjectTypes.SelectMany(x => x.GetMethodsByAttribute<ServerAttribute>()).ToArray();
+        MulticastMethodInfos = NetworkObjectTypes.SelectMany(x => x.GetMethodsByAttribute<MulticastAttribute>())
+            .ToArray();
 
         Activator.CreateInstance(typeof(InternalNetworkInit), true);
         var networkInitClassType = entryAssembly.GetTypes().First(x => x.Name == NetworkInitClassName);
@@ -39,6 +41,7 @@ internal sealed class Reflection
     public static Type[] PacketTypes { get; private set; } = null!;
     public static Type? PlayerType { get; private set; }
     public static MethodInfo[] ServerMethodInfos { get; private set; } = null!;
+    public static MethodInfo[] MulticastMethodInfos { get; private set; } = null!;
 
     public static Action<object, object[]?> CreateMethod(MethodInfo methodInfo)
     {

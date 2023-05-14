@@ -9,6 +9,12 @@ public sealed class Entity : NetworkObject
     [Server]
     public void IncrementValueServer()
     {
+        IncrementValueMulticast();
+    }
+
+    [Multicast]
+    private void IncrementValueMulticast()
+    {
         Value++;
     }
 }
