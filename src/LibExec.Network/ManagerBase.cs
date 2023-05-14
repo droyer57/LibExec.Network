@@ -15,9 +15,16 @@ public abstract class ManagerBase
         _listener.PeerConnectedEvent += OnPeerConnected;
         _listener.PeerDisconnectedEvent += OnPeerDisconnected;
         _listener.NetworkReceiveEvent += OnNetworkReceive;
+
+        PacketProcessor = new PacketProcessor();
+        PacketProcessor.RegisterType<NetworkObjectType>();
+
+        RegisterPacket<InvokeMethodPacket>(NetworkManager.OnInvokeMethod);
     }
 
     protected static NetworkManager NetworkManager => NetworkManager.Instance;
+
+    internal PacketProcessor PacketProcessor { get; }
 
     public ConnectionState ConnectionState
     {
@@ -73,7 +80,23 @@ public abstract class ManagerBase
     protected virtual void OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channel,
         DeliveryMethod deliveryMethod)
     {
-        NetworkManager.PacketProcessor.ReadAllPackets(reader, new NetConnection(peer));
+        PacketProcessor.ReadAllPackets(reader, new NetConnection(peer));
         NetworkManager.InvokeNetworkEvent();
+        reader.Recycle();
+    }
+
+    public void RegisterPacket<T>(Action<T> callback) where T : class, new()
+    {
+        PacketProcessor.RegisterCallback(callback);
+    }
+
+    public void RegisterPacket<T>(Action<T, NetConnection> callback) where T : class, new()
+    {
+        PacketProcessor.RegisterCallback(callback);
+    }
+
+    public bool RemovePacket<T>()
+    {
+        return PacketProcessor.RemoveCallback<T>();
     }
 }

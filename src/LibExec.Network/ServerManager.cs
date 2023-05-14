@@ -124,11 +124,11 @@ public sealed class ServerManager : ManagerBase
     }
 
     public void SendPacketToAll<T>(T packet, DeliveryMethod deliveryMethod = DeliveryMethod.ReliableOrdered,
-        NetConnection? excludeConnection = null, bool excludeLocalPeer = true) where T : class, new()
+        NetConnection? excludeConnection = null, bool excludeLocalConnection = false) where T : class, new()
     {
         foreach (var peer in Manager.ConnectedPeerList.Where(x => x != excludeConnection?.Peer))
         {
-            if (excludeLocalPeer && peer.IsLocal())
+            if (excludeLocalConnection && peer.IsLocal())
             {
                 continue;
             }

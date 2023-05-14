@@ -55,7 +55,7 @@
 
     protected override void OnStart()
     {
-        NetworkManager.RegisterPacket<MessagePacket>(OnMessagePacket);
+        NetworkManager.RegisterPacket<MessagePacket>(OnMessagePacketServer, OnMessagePacketClient);
     }
 
     protected override void OnStop()
@@ -77,13 +77,22 @@
         _message = string.Empty;
     }
 
-    private void OnMessagePacket(MessagePacket packet, NetConnection connection)
+    private void OnMessagePacketServer(MessagePacket packet)
     {
-        if (NetworkManager.IsServer)
+        NetworkManager.ServerManager.SendPacketToAll(packet);
+        if (NetworkManager.IsServerOnly)
         {
-            NetworkManager.ServerManager.SendPacketToAll(packet);
+            AddMessage(packet);
         }
+    }
 
+    private void OnMessagePacketClient(MessagePacket packet)
+    {
+        AddMessage(packet);
+    }
+
+    private void AddMessage(MessagePacket packet)
+    {
         _packetsMessage.Add($"{packet.SenderId}: {packet.Text}");
     }
 

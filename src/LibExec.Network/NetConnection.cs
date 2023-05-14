@@ -1,5 +1,4 @@
 using LiteNetLib;
-using LiteNetLib.Utils;
 
 namespace LibExec.Network;
 
@@ -25,8 +24,6 @@ public sealed class NetConnection
     public void SendPacket<T>(T packet, DeliveryMethod deliveryMethod = DeliveryMethod.ReliableOrdered)
         where T : class, new()
     {
-        var writer = new NetDataWriter();
-        NetworkManager.PacketProcessor.Write(writer, packet);
-        Peer.Send(writer, deliveryMethod);
+        Peer.SendPacket(packet, deliveryMethod);
     }
 }

@@ -27,15 +27,10 @@ public sealed class NetworkManager
 
         var _ = new Reflection();
 
-        PacketProcessor = new PacketProcessor();
-        PacketProcessor.RegisterType<NetworkObjectType>();
-
         NetworkObjectTypes = new BiDictionary<Type>(Reflection.NetworkObjectTypes);
 
         ServerManager = new ServerManager();
         ClientManager = new ClientManager();
-
-        RegisterPacket<InvokeMethodPacket>(OnInvokeMethod);
 
         _methodInfos = new BiDictionary<MethodInfo>(Reflection.ServerMethodInfos);
         foreach (var method in Reflection.ServerMethodInfos)
@@ -48,14 +43,15 @@ public sealed class NetworkManager
 
     internal Dictionary<uint, NetworkObject> NetworkObjects { get; } = new();
     internal BiDictionary<Type> NetworkObjectTypes { get; private set; }
-    internal PacketProcessor PacketProcessor { get; }
-
     public int Port { get; private set; } = DefaultPort;
 
     public ServerManager ServerManager { get; }
     public ClientManager ClientManager { get; }
 
     public static NetworkManager Instance { get; private set; } = null!;
+
+    internal PacketProcessor PacketProcessor =>
+        IsServer ? ServerManager.PacketProcessor : ClientManager.PacketProcessor;
 
     public bool IsServer => ServerManager.IsStarted;
     public bool IsClient => ClientManager.IsStarted;
@@ -128,19 +124,23 @@ public sealed class NetworkManager
         return creator();
     }
 
-    public void RegisterPacket<T>(Action<T> callback) where T : class, new()
+    public void RegisterPacket<T>(Action<T> serverCallback, Action<T> clientCallback) where T : class, new()
     {
-        PacketProcessor.RegisterCallback(callback);
+        ServerManager.RegisterPacket(serverCallback);
+        ClientManager.RegisterPacket(clientCallback);
     }
 
-    public void RegisterPacket<T>(Action<T, NetConnection> callback) where T : class, new()
+    public void RegisterPacket<T>(Action<T, NetConnection> serverCallback, Action<T, NetConnection> clientCallback)
+        where T : class, new()
     {
-        PacketProcessor.RegisterCallback(callback);
+        ServerManager.RegisterPacket(serverCallback);
+        ClientManager.RegisterPacket(clientCallback);
     }
 
     public void RemovePacket<T>()
     {
-        PacketProcessor.RemoveCallback<T>();
+        ServerManager.RemovePacket<T>();
+        ClientManager.RemovePacket<T>();
     }
 
     internal void EnsureMethodIsCalledByServer()
@@ -177,7 +177,7 @@ public sealed class NetworkManager
         return Instance.IsServer;
     }
 
-    private void OnInvokeMethod(InvokeMethodPacket packet)
+    internal void OnInvokeMethod(InvokeMethodPacket packet)
     {
         var instance = NetworkObjects[packet.NetworkObjectId];
         var methodInfo = _methodInfos.Get(packet.MethodId);

@@ -11,7 +11,7 @@ internal static class NetPeerExtensions
         DeliveryMethod deliveryMethod = DeliveryMethod.ReliableOrdered) where T : class, new()
     {
         var writer = new NetDataWriter();
-        NetworkManager.Instance.PacketProcessor.Write(writer, packet);
+        NetworkManager.PacketProcessor.Write(writer, packet);
         peer.Send(writer, deliveryMethod);
     }
 

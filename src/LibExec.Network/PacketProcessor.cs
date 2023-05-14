@@ -34,6 +34,12 @@ public sealed class PacketProcessor
         writer.Put(_packetTypes.Get(typeof(T)));
     }
 
+    public void Write<T>(NetDataWriter writer, T packet) where T : class, new()
+    {
+        WriteHeader<T>(writer);
+        _netSerializer.Serialize(writer, packet);
+    }
+
     public void RegisterType<T>() where T : struct, INetSerializable
     {
         _netSerializer.RegisterNestedType<T>();
@@ -57,12 +63,6 @@ public sealed class PacketProcessor
         GetCallback(reader)(reader, connection);
     }
 
-    public void Write<T>(NetDataWriter writer, T packet) where T : class, new()
-    {
-        WriteHeader<T>(writer);
-        _netSerializer.Serialize(writer, packet);
-    }
-
     public void RegisterCallback<T>(Action<T> onReceive) where T : class, new()
     {
         RegisterCallback<T>((packet, _) => onReceive(packet));
@@ -72,10 +72,10 @@ public sealed class PacketProcessor
     {
         _netSerializer.Register<T>();
         var packet = new T();
-        _callbacks[typeof(T)] = (reader, peer) =>
+        _callbacks[typeof(T)] = (reader, connection) =>
         {
             _netSerializer.Deserialize(reader, packet);
-            onReceive(packet, peer);
+            onReceive(packet, connection);
         };
     }
 
