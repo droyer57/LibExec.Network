@@ -47,7 +47,7 @@ public abstract class NetworkComponentBase : ComponentBase, IDisposable
         InvokeAsync(StateHasChanged);
     }
 
-    private void OnNetworkObjectEvent(NetworkObject networkObject, NetworkObjectEvent state)
+    protected virtual void OnNetworkObjectEvent(NetworkObject networkObject, NetworkObjectEvent state)
     {
         InvokeAsync(StateHasChanged);
     }

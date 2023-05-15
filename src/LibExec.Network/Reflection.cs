@@ -31,6 +31,7 @@ internal sealed class Reflection
         ServerMethodInfos = NetworkObjectTypes.SelectMany(x => x.GetMethodsByAttribute<ServerAttribute>()).ToArray();
         MulticastMethodInfos = NetworkObjectTypes.SelectMany(x => x.GetMethodsByAttribute<MulticastAttribute>())
             .ToArray();
+        ClientMethodInfos = NetworkObjectTypes.SelectMany(x => x.GetMethodsByAttribute<ClientAttribute>()).ToArray();
 
         Activator.CreateInstance(typeof(InternalNetworkInit), true);
         var networkInitClassType = entryAssembly.GetTypes().First(x => x.Name == NetworkInitClassName);
@@ -42,6 +43,7 @@ internal sealed class Reflection
     public static Type? PlayerType { get; private set; }
     public static MethodInfo[] ServerMethodInfos { get; private set; } = null!;
     public static MethodInfo[] MulticastMethodInfos { get; private set; } = null!;
+    public static MethodInfo[] ClientMethodInfos { get; private set; } = null!;
 
     public static Action<object, object[]?> CreateMethod(MethodInfo methodInfo)
     {

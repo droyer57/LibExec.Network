@@ -38,6 +38,7 @@ public sealed class ClientManager : ManagerBase
     protected override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
         Stop();
+        Connection = null!;
     }
 
     private void OnSpawnNetworkObject(SpawnNetworkObjectPacket packet)

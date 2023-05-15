@@ -19,7 +19,7 @@
 
             <Separator ClassName="mt-1 mb-2 border-t border-gray-400 self-stretch"/>
             <Stack ClassName="flex-wrap gap-1">
-                <DefaultButton Icon="Unknown" Text="Unknown"/>
+                <DefaultButton Icon="Send" Text="Ping" OnClick="player.PingServer"/>
                 <Separator ClassName="border-t border-gray-400 my-1"/>
                 <DefaultButton Icon="ChromeClose" Text="Disconnect" IconClassName="text-xs"
                                OnClick="() => DisconnectPlayer(player)" Enabled="@(player.Owner != null)"/>
@@ -43,7 +43,7 @@
 </Stack>
 
 <Stack ClassName="ml-2">
-    @foreach (var item in _packetsMessage)
+    @foreach (var item in _eventMessages)
     {
         <p>@item</p>
     }
@@ -51,17 +51,46 @@
 
 @code {
 
-    private List<string> _packetsMessage = new();
+    private List<string> _eventMessages = new();
     private string _message = null!;
 
     protected override void OnStart()
     {
         NetworkManager.RegisterPacket<MessagePacket>(OnMessagePacketServer, OnMessagePacketClient);
+
+        var player = NetworkManager.GetLocalPlayer<Player>();
+        UpdatePlayerPingEvent(player, true);
     }
 
     protected override void OnStop()
     {
         NetworkManager.RemovePacket<MessagePacket>();
+
+        var player = NetworkManager.GetLocalPlayer<Player>();
+        UpdatePlayerPingEvent(player, false);
+    }
+
+    protected override void OnNetworkObjectEvent(NetworkObject networkObject, NetworkObjectEvent state)
+    {
+        if (networkObject is Player player && networkObject.IsOwner)
+        {
+            UpdatePlayerPingEvent(player, state == NetworkObjectEvent.Spawned);
+        }
+
+        base.OnNetworkObjectEvent(networkObject, state);
+    }
+
+    private void UpdatePlayerPingEvent(Player? player, bool add)
+    {
+        if (player == null) return;
+
+        if (add) player.PingEvent += OnPing;
+        else player.PingEvent -= OnPing;
+    }
+
+    private void OnPing()
+    {
+        _eventMessages.Add("Ping!");
     }
 
     private string GetPlayerClass(Player player)
@@ -71,7 +100,7 @@
 
     private void SendPacket()
     {
-        var player = NetworkManager.Query<Player>().First(x => x.IsOwner); // todo: get local player in NetworkManager
+        var player = NetworkManager.LocalPlayer!;
         var packet = new MessagePacket { Text = _message, SenderId = player.Id.ToString() };
 
         NetworkManager.ClientManager.SendPacket(packet);
@@ -94,7 +123,7 @@
 
     private void AddMessage(MessagePacket packet)
     {
-        _packetsMessage.Add($"{packet.SenderId}: {packet.Text}");
+        _eventMessages.Add($"{packet.SenderId}: {packet.Text}");
     }
 
     private void AddObject()

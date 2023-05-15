@@ -33,7 +33,8 @@ public sealed class NetworkManager
         ServerManager = new ServerManager();
         ClientManager = new ClientManager();
 
-        var methods = Reflection.ServerMethodInfos.Concat(Reflection.MulticastMethodInfos).ToArray();
+        var methods = Reflection.ServerMethodInfos.Concat(Reflection.MulticastMethodInfos)
+            .Concat(Reflection.ClientMethodInfos).ToArray();
         MethodInfos = new BiDictionary<MethodInfo>(methods);
         _methods = methods.ToDictionary(x => x, Reflection.CreateMethod);
 
@@ -56,6 +57,7 @@ public sealed class NetworkManager
     internal Dictionary<Type, Func<NetDataReader, object>> NetReaderActions { get; } = new();
     internal Dictionary<MethodInfo, Type[]> MethodsParams { get; }
     public int Port { get; private set; } = DefaultPort;
+    public NetworkObject? LocalPlayer { get; private set; }
 
     public ServerManager ServerManager { get; }
     public ClientManager ClientManager { get; }
@@ -130,6 +132,12 @@ public sealed class NetworkManager
         {
             _harmony.Patch(method, new HarmonyMethod(multicastPatch));
         }
+
+        var clientPatch = GetType().GetMethodByName(nameof(ClientPatch));
+        foreach (var method in Reflection.ClientMethodInfos)
+        {
+            _harmony.Patch(method, new HarmonyMethod(clientPatch));
+        }
     }
 
     internal NetworkObject CreateNetworkObject(Type type)
@@ -172,6 +180,11 @@ public sealed class NetworkManager
     internal void AddNetworkObject(NetworkObject networkObject)
     {
         NetworkObjects.Add(networkObject.Id, networkObject);
+        if (networkObject.IsOwner && networkObject.GetType() == Reflection.PlayerType) // todo: NetworkPlayer class ? 
+        {
+            LocalPlayer = networkObject;
+        }
+
         NetworkObjectEvent?.Invoke(networkObject, Network.NetworkObjectEvent.Spawned);
     }
 
@@ -187,7 +200,7 @@ public sealed class NetworkManager
         if (Instance.IsClientOnly)
         {
             var packet = GetInvokeMethodPacket(__originalMethod, __instance, __args);
-            Instance.ClientManager.Connection.SendPacket(packet);
+            Instance.ClientManager.SendPacket(packet);
         }
 
         return Instance.IsServer;
@@ -203,6 +216,19 @@ public sealed class NetworkManager
 
         var packet = GetInvokeMethodPacket(__originalMethod, __instance, __args);
         Instance.ServerManager.SendPacketToAll(packet, excludeLocalConnection: true);
+        return true;
+    }
+
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
+    private static bool ClientPatch(NetworkObject __instance, MethodInfo __originalMethod, object[] __args)
+    {
+        if (Instance.IsServer && __instance.Owner is { IsLocal: false })
+        {
+            var packet = GetInvokeMethodPacket(__originalMethod, __instance, __args);
+            __instance.Owner.SendPacket(packet);
+            return false;
+        }
+
         return true;
     }
 
@@ -267,5 +293,10 @@ public sealed class NetworkManager
         NetReaderActions.Add(typeof(string), reader => reader.GetString());
         NetReaderActions.Add(typeof(char), reader => reader.GetChar());
         NetReaderActions.Add(typeof(IPEndPoint), reader => reader.GetNetEndPoint());
+    }
+
+    public T? GetLocalPlayer<T>() where T : NetworkObject
+    {
+        return LocalPlayer as T;
     }
 }
