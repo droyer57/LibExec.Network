@@ -14,7 +14,6 @@ public sealed class NetworkManager
     internal const string Key = "DDurBXaw8sLsYs9x";
 
     private readonly Harmony _harmony = new(Key);
-    private readonly BiDictionary<MethodInfo> _methodInfos;
     private readonly Dictionary<MethodInfo, Action<object, object[]?>> _methods;
     private readonly Dictionary<Type, Func<NetworkObject>> _networkObjectsCache = new();
 
@@ -35,8 +34,10 @@ public sealed class NetworkManager
         ClientManager = new ClientManager();
 
         var methods = Reflection.ServerMethodInfos.Concat(Reflection.MulticastMethodInfos).ToArray();
-        _methodInfos = new BiDictionary<MethodInfo>(methods);
+        MethodInfos = new BiDictionary<MethodInfo>(methods);
         _methods = methods.ToDictionary(x => x, Reflection.CreateMethod);
+
+        MethodsParams = methods.ToDictionary(x => x, x => x.GetParameters().Select(p => p.ParameterType).ToArray());
 
         RegisterTypes(typeof(byte), typeof(sbyte), typeof(short), typeof(ushort), typeof(int), typeof(uint),
             typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(bool), typeof(string), typeof(char),
@@ -46,11 +47,14 @@ public sealed class NetworkManager
         PatchMethods();
     }
 
+    internal BiDictionary<MethodInfo> MethodInfos { get; }
+
     internal Dictionary<uint, NetworkObject> NetworkObjects { get; } = new();
     internal BiDictionary<Type> NetworkObjectTypes { get; }
-    internal BiDictionary<Type, byte> Types { get; } = new();
+    internal BiDictionary<Type, byte> Types { get; } = new(); // todo: useless for now ?
     internal Dictionary<Type, Action<NetDataWriter, object>> NetWriterActions { get; } = new();
     internal Dictionary<Type, Func<NetDataReader, object>> NetReaderActions { get; } = new();
+    internal Dictionary<MethodInfo, Type[]> MethodsParams { get; }
     public int Port { get; private set; } = DefaultPort;
 
     public ServerManager ServerManager { get; }
@@ -180,7 +184,6 @@ public sealed class NetworkManager
     [SuppressMessage("ReSharper", "InconsistentNaming")]
     private static bool ServerPatch(NetworkObject __instance, MethodInfo __originalMethod, object[] __args)
     {
-        // todo: args
         if (Instance.IsClientOnly)
         {
             var packet = GetInvokeMethodPacket(__originalMethod, __instance, __args);
@@ -205,22 +208,19 @@ public sealed class NetworkManager
 
     internal void OnInvokeMethod(InvokeMethodPacket packet)
     {
-        var instance = NetworkObjects[packet.NetworkObjectId];
-        var methodInfo = _methodInfos.Get(packet.MethodId);
+        var instance = NetworkObjects[packet.Method.NetworkObjectId];
+        var methodInfo = MethodInfos.Get(packet.Method.MethodId);
         var method = _methods[methodInfo];
 
-        var args = packet.Args.Select(x => x.Value).ToArray();
-        method.Invoke(instance, args);
+        method.Invoke(instance, packet.Method.Args);
     }
 
     private static InvokeMethodPacket GetInvokeMethodPacket(MethodInfo methodInfo, NetworkObject networkObject,
-        IEnumerable<object> args)
+        object[] args)
     {
-        var methodParameters = args.Select(x => new MethodParameter { Type = x.GetType(), Value = x }).ToArray();
-        var methodId = Instance._methodInfos.Get(methodInfo);
-
-        return new InvokeMethodPacket
-            { NetworkObjectId = networkObject.Id, MethodId = methodId, Args = methodParameters };
+        var methodId = Instance.MethodInfos.Get(methodInfo);
+        var netMethod = new NetMethod(methodId, networkObject.Id, args);
+        return new InvokeMethodPacket(netMethod);
     }
 
     internal void InvokeNetworkEvent()
