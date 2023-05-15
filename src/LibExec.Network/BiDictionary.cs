@@ -5,6 +5,10 @@ internal class BiDictionary<T1> : BiDictionary<T1, ushort> where T1 : notnull
     public BiDictionary(IEnumerable<T1> data) : base(data)
     {
     }
+
+    public BiDictionary()
+    {
+    }
 }
 
 internal class BiDictionary<T1, T2> where T1 : notnull where T2 : struct
@@ -19,6 +23,14 @@ internal class BiDictionary<T1, T2> where T1 : notnull where T2 : struct
         _reverseData = _data.ToDictionary(x => x.Value, x => x.Key);
     }
 
+    public BiDictionary()
+    {
+        _data = new Dictionary<T2, T1>();
+        _reverseData = new Dictionary<T1, T2>();
+    }
+
+    public int Count => _data.Count;
+
     public T1 Get(T2 key)
     {
         return _data[key];
@@ -27,5 +39,11 @@ internal class BiDictionary<T1, T2> where T1 : notnull where T2 : struct
     public T2 Get(T1 type)
     {
         return _reverseData[type];
+    }
+
+    public void Add(T2 key, T1 value)
+    {
+        _data.Add(key, value);
+        _reverseData.Add(value, key);
     }
 }

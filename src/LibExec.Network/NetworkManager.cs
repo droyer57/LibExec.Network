@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Reflection;
 using HarmonyLib;
+using LiteNetLib.Utils;
 
 namespace LibExec.Network;
 
@@ -36,11 +38,19 @@ public sealed class NetworkManager
         _methodInfos = new BiDictionary<MethodInfo>(methods);
         _methods = methods.ToDictionary(x => x, Reflection.CreateMethod);
 
+        RegisterTypes(typeof(byte), typeof(sbyte), typeof(short), typeof(ushort), typeof(int), typeof(uint),
+            typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(bool), typeof(string), typeof(char),
+            typeof(IPEndPoint), typeof(NetworkObject));
+
+        InitNetActions();
         PatchMethods();
     }
 
     internal Dictionary<uint, NetworkObject> NetworkObjects { get; } = new();
-    internal BiDictionary<Type> NetworkObjectTypes { get; private set; }
+    internal BiDictionary<Type> NetworkObjectTypes { get; }
+    internal BiDictionary<Type, byte> Types { get; } = new();
+    internal Dictionary<Type, Action<NetDataWriter, object>> NetWriterActions { get; } = new();
+    internal Dictionary<Type, Func<NetDataReader, object>> NetReaderActions { get; } = new();
     public int Port { get; private set; } = DefaultPort;
 
     public ServerManager ServerManager { get; }
@@ -173,7 +183,7 @@ public sealed class NetworkManager
         // todo: args
         if (Instance.IsClientOnly)
         {
-            var packet = GetInvokeMethodPacket(__originalMethod, __instance);
+            var packet = GetInvokeMethodPacket(__originalMethod, __instance, __args);
             Instance.ClientManager.Connection.SendPacket(packet);
         }
 
@@ -188,7 +198,7 @@ public sealed class NetworkManager
             return true;
         }
 
-        var packet = GetInvokeMethodPacket(__originalMethod, __instance);
+        var packet = GetInvokeMethodPacket(__originalMethod, __instance, __args);
         Instance.ServerManager.SendPacketToAll(packet, excludeLocalConnection: true);
         return true;
     }
@@ -199,7 +209,18 @@ public sealed class NetworkManager
         var methodInfo = _methodInfos.Get(packet.MethodId);
         var method = _methods[methodInfo];
 
-        method.Invoke(instance, null);
+        var args = packet.Args.Select(x => x.Value).ToArray();
+        method.Invoke(instance, args);
+    }
+
+    private static InvokeMethodPacket GetInvokeMethodPacket(MethodInfo methodInfo, NetworkObject networkObject,
+        IEnumerable<object> args)
+    {
+        var methodParameters = args.Select(x => new MethodParameter { Type = x.GetType(), Value = x }).ToArray();
+        var methodId = Instance._methodInfos.Get(methodInfo);
+
+        return new InvokeMethodPacket
+            { NetworkObjectId = networkObject.Id, MethodId = methodId, Args = methodParameters };
     }
 
     internal void InvokeNetworkEvent()
@@ -207,9 +228,44 @@ public sealed class NetworkManager
         NetworkEvent?.Invoke();
     }
 
-    private static InvokeMethodPacket GetInvokeMethodPacket(MethodInfo methodInfo, NetworkObject networkObject)
+    private void RegisterTypes(params Type[] types)
     {
-        var methodId = Instance._methodInfos.Get(methodInfo);
-        return new InvokeMethodPacket { NetworkObjectId = networkObject.Id, MethodId = methodId };
+        foreach (var type in types)
+        {
+            Types.Add((byte)Types.Count, type);
+        }
+    }
+
+    private void InitNetActions()
+    {
+        NetWriterActions.Add(typeof(byte), (writer, value) => writer.Put((byte)value));
+        NetWriterActions.Add(typeof(sbyte), (writer, value) => writer.Put((sbyte)value));
+        NetWriterActions.Add(typeof(short), (writer, value) => writer.Put((short)value));
+        NetWriterActions.Add(typeof(ushort), (writer, value) => writer.Put((ushort)value));
+        NetWriterActions.Add(typeof(int), (writer, value) => writer.Put((int)value));
+        NetWriterActions.Add(typeof(uint), (writer, value) => writer.Put((uint)value));
+        NetWriterActions.Add(typeof(long), (writer, value) => writer.Put((long)value));
+        NetWriterActions.Add(typeof(ulong), (writer, value) => writer.Put((ulong)value));
+        NetWriterActions.Add(typeof(float), (writer, value) => writer.Put((float)value));
+        NetWriterActions.Add(typeof(double), (writer, value) => writer.Put((double)value));
+        NetWriterActions.Add(typeof(bool), (writer, value) => writer.Put((bool)value));
+        NetWriterActions.Add(typeof(string), (writer, value) => writer.Put((string)value));
+        NetWriterActions.Add(typeof(char), (writer, value) => writer.Put((char)value));
+        NetWriterActions.Add(typeof(IPEndPoint), (writer, value) => writer.Put((IPEndPoint)value));
+
+        NetReaderActions.Add(typeof(byte), reader => reader.GetByte());
+        NetReaderActions.Add(typeof(sbyte), reader => reader.GetSByte());
+        NetReaderActions.Add(typeof(short), reader => reader.GetShort());
+        NetReaderActions.Add(typeof(ushort), reader => reader.GetUShort());
+        NetReaderActions.Add(typeof(int), reader => reader.GetInt());
+        NetReaderActions.Add(typeof(uint), reader => reader.GetUInt());
+        NetReaderActions.Add(typeof(long), reader => reader.GetLong());
+        NetReaderActions.Add(typeof(ulong), reader => reader.GetULong());
+        NetReaderActions.Add(typeof(float), reader => reader.GetFloat());
+        NetReaderActions.Add(typeof(double), reader => reader.GetDouble());
+        NetReaderActions.Add(typeof(bool), reader => reader.GetBool());
+        NetReaderActions.Add(typeof(string), reader => reader.GetString());
+        NetReaderActions.Add(typeof(char), reader => reader.GetChar());
+        NetReaderActions.Add(typeof(IPEndPoint), reader => reader.GetNetEndPoint());
     }
 }
