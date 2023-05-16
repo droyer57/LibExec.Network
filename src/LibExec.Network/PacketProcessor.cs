@@ -54,13 +54,8 @@ public sealed class PacketProcessor
     {
         while (reader.AvailableBytes > 0)
         {
-            ReadPacket(reader, connection);
+            GetCallback(reader).Invoke(reader, connection);
         }
-    }
-
-    private void ReadPacket(NetDataReader reader, NetConnection connection)
-    {
-        GetCallback(reader)(reader, connection);
     }
 
     public void RegisterCallback<T>(Action<T> onReceive) where T : class, new()

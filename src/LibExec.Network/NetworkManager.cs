@@ -48,24 +48,79 @@ public sealed class NetworkManager
         PatchMethods();
     }
 
-    internal BiDictionary<MethodInfo> MethodInfos { get; }
+    #region Internal
 
+    internal BiDictionary<MethodInfo> MethodInfos { get; }
     internal Dictionary<uint, NetworkObject> NetworkObjects { get; } = new();
     internal BiDictionary<Type> NetworkObjectTypes { get; }
     internal BiDictionary<Type, byte> Types { get; } = new(); // todo: useless for now ?
     internal Dictionary<Type, Action<NetDataWriter, object>> NetWriterActions { get; } = new();
     internal Dictionary<Type, Func<NetDataReader, object>> NetReaderActions { get; } = new();
     internal Dictionary<MethodInfo, Type[]> MethodsParams { get; }
-    public int Port { get; private set; } = DefaultPort;
-    public NetworkObject? LocalPlayer { get; private set; }
-
-    public ServerManager ServerManager { get; }
-    public ClientManager ClientManager { get; }
-
-    public static NetworkManager Instance { get; private set; } = null!;
 
     internal PacketProcessor PacketProcessor =>
         IsServer ? ServerManager.PacketProcessor : ClientManager.PacketProcessor;
+
+    internal NetworkObject CreateNetworkObject(Type type)
+    {
+        if (!_networkObjectsCache.TryGetValue(type, out var creator))
+        {
+            throw new InvalidOperationException($"{nameof(CreateNetworkObject)}");
+        }
+
+        return creator();
+    }
+
+    internal void EnsureMethodIsCalledByServer()
+    {
+        if (!IsServer)
+        {
+            throw new Exception("This method can only be called by the server.");
+        }
+    }
+
+    internal void AddNetworkObject(NetworkObject networkObject)
+    {
+        NetworkObjects.Add(networkObject.Id, networkObject);
+        if (networkObject.IsOwner && networkObject.GetType() == Reflection.PlayerType) // todo: NetworkPlayer class ? 
+        {
+            LocalPlayer = networkObject;
+        }
+
+        NetworkObjectEvent?.Invoke(networkObject, Network.NetworkObjectEvent.Spawned);
+    }
+
+    internal void RemoveNetworkObject(NetworkObject networkObject)
+    {
+        NetworkObjects.Remove(networkObject.Id);
+        NetworkObjectEvent?.Invoke(networkObject, Network.NetworkObjectEvent.Destroyed);
+    }
+
+    internal void OnInvokeMethod(InvokeMethodPacket packet)
+    {
+        var instance = NetworkObjects[packet.Method.NetworkObjectId];
+        var methodInfo = MethodInfos.Get(packet.Method.MethodId);
+        var method = _methods[methodInfo];
+
+        method.Invoke(instance, packet.Method.Args);
+    }
+
+    internal void InvokeNetworkEvent()
+    {
+        NetworkEvent?.Invoke();
+    }
+
+    #endregion
+
+    #region Public
+
+    public static NetworkManager Instance { get; private set; } = null!;
+
+    public int Port { get; private set; } = DefaultPort;
+
+    public NetworkObject? LocalPlayer { get; private set; }
+    public ServerManager ServerManager { get; }
+    public ClientManager ClientManager { get; }
 
     public bool IsServer => ServerManager.IsStarted;
     public bool IsClient => ClientManager.IsStarted;
@@ -119,37 +174,6 @@ public sealed class NetworkManager
         _networkObjectsCache.Add(typeof(T), () => new T());
     }
 
-    private void PatchMethods()
-    {
-        var serverPatch = GetType().GetMethodByName(nameof(ServerPatch));
-        foreach (var method in Reflection.ServerMethodInfos)
-        {
-            _harmony.Patch(method, new HarmonyMethod(serverPatch));
-        }
-
-        var multicastPatch = GetType().GetMethodByName(nameof(MulticastPatch));
-        foreach (var method in Reflection.MulticastMethodInfos)
-        {
-            _harmony.Patch(method, new HarmonyMethod(multicastPatch));
-        }
-
-        var clientPatch = GetType().GetMethodByName(nameof(ClientPatch));
-        foreach (var method in Reflection.ClientMethodInfos)
-        {
-            _harmony.Patch(method, new HarmonyMethod(clientPatch));
-        }
-    }
-
-    internal NetworkObject CreateNetworkObject(Type type)
-    {
-        if (!_networkObjectsCache.TryGetValue(type, out var creator))
-        {
-            throw new InvalidOperationException($"{nameof(CreateNetworkObject)}");
-        }
-
-        return creator();
-    }
-
     public void RegisterPacket<T>(Action<T> serverCallback, Action<T> clientCallback) where T : class, new()
     {
         ServerManager.RegisterPacket(serverCallback);
@@ -169,29 +193,34 @@ public sealed class NetworkManager
         ClientManager.RemovePacket<T>();
     }
 
-    internal void EnsureMethodIsCalledByServer()
+    public T? GetLocalPlayer<T>() where T : NetworkObject
     {
-        if (!IsServer)
-        {
-            throw new Exception("This method can only be called by the server.");
-        }
+        return LocalPlayer as T;
     }
 
-    internal void AddNetworkObject(NetworkObject networkObject)
+    #endregion
+
+    #region Private
+
+    private void PatchMethods()
     {
-        NetworkObjects.Add(networkObject.Id, networkObject);
-        if (networkObject.IsOwner && networkObject.GetType() == Reflection.PlayerType) // todo: NetworkPlayer class ? 
+        var serverPatch = GetType().GetMethodByName(nameof(ServerPatch));
+        foreach (var method in Reflection.ServerMethodInfos)
         {
-            LocalPlayer = networkObject;
+            _harmony.Patch(method, new HarmonyMethod(serverPatch));
         }
 
-        NetworkObjectEvent?.Invoke(networkObject, Network.NetworkObjectEvent.Spawned);
-    }
+        var multicastPatch = GetType().GetMethodByName(nameof(MulticastPatch));
+        foreach (var method in Reflection.MulticastMethodInfos)
+        {
+            _harmony.Patch(method, new HarmonyMethod(multicastPatch));
+        }
 
-    internal void RemoveNetworkObject(NetworkObject networkObject)
-    {
-        NetworkObjects.Remove(networkObject.Id);
-        NetworkObjectEvent?.Invoke(networkObject, Network.NetworkObjectEvent.Destroyed);
+        var clientPatch = GetType().GetMethodByName(nameof(ClientPatch));
+        foreach (var method in Reflection.ClientMethodInfos)
+        {
+            _harmony.Patch(method, new HarmonyMethod(clientPatch));
+        }
     }
 
     [SuppressMessage("ReSharper", "InconsistentNaming")]
@@ -232,26 +261,12 @@ public sealed class NetworkManager
         return true;
     }
 
-    internal void OnInvokeMethod(InvokeMethodPacket packet)
-    {
-        var instance = NetworkObjects[packet.Method.NetworkObjectId];
-        var methodInfo = MethodInfos.Get(packet.Method.MethodId);
-        var method = _methods[methodInfo];
-
-        method.Invoke(instance, packet.Method.Args);
-    }
-
     private static InvokeMethodPacket GetInvokeMethodPacket(MethodInfo methodInfo, NetworkObject networkObject,
         object[] args)
     {
         var methodId = Instance.MethodInfos.Get(methodInfo);
         var netMethod = new NetMethod(methodId, networkObject.Id, args);
         return new InvokeMethodPacket(netMethod);
-    }
-
-    internal void InvokeNetworkEvent()
-    {
-        NetworkEvent?.Invoke();
     }
 
     private void RegisterTypes(params Type[] types)
@@ -295,8 +310,5 @@ public sealed class NetworkManager
         NetReaderActions.Add(typeof(IPEndPoint), reader => reader.GetNetEndPoint());
     }
 
-    public T? GetLocalPlayer<T>() where T : NetworkObject
-    {
-        return LocalPlayer as T;
-    }
+    #endregion
 }
