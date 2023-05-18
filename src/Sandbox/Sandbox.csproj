@@ -7,13 +7,17 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\CodeGenerator\CodeGenerator.csproj" PrivateAssets="All" Condition="'$(Configuration)'=='Debug'"/>
         <ProjectReference Include="..\LibExec.Network.SourceGenerators\LibExec.Network.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
         <ProjectReference Include="..\LibExec.Network\LibExec.Network.csproj"/>
     </ItemGroup>
 
-    <ItemGroup>
-        <_ContentIncludedByDefault Remove="Components\Views\Game.razor"/>
-        <_ContentIncludedByDefault Remove="Components\Views\Menu.razor"/>
-    </ItemGroup>
+    <Target Name="PostBuild" AfterTargets="Build">
+        <Exec Command="$(MSBuildThisFileDirectory)../CodeGenerator/bin/$(Configuration)/net6.0/CodeGenerator $(TargetPath)"/>
+        <ItemGroup>
+            <FilesToDelete Include="$(OutDir)CodeGenerator.*"/>
+        </ItemGroup>
+        <Delete Files="@(FilesToDelete)"/>
+    </Target>
 
 </Project>

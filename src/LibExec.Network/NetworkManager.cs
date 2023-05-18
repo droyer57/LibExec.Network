@@ -1,7 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Net;
+﻿using System.Net;
 using System.Reflection;
-using HarmonyLib;
 using LiteNetLib.Utils;
 
 namespace LibExec.Network;
@@ -13,7 +11,6 @@ public sealed class NetworkManager
 
     internal const string Key = "DDurBXaw8sLsYs9x";
 
-    private readonly Harmony _harmony = new(Key);
     private readonly Dictionary<MethodInfo, Action<object, object[]?>> _methods;
     private readonly Dictionary<Type, Func<NetworkObject>> _networkObjectsCache = new();
 
@@ -45,7 +42,6 @@ public sealed class NetworkManager
             typeof(IPEndPoint), typeof(NetworkObject));
 
         InitNetActions();
-        PatchMethods();
     }
 
     #region Internal
@@ -202,66 +198,7 @@ public sealed class NetworkManager
 
     #region Private
 
-    private void PatchMethods()
-    {
-        var serverPatch = GetType().GetMethodByName(nameof(ServerPatch));
-        foreach (var method in Reflection.ServerMethodInfos)
-        {
-            _harmony.Patch(method, new HarmonyMethod(serverPatch));
-        }
-
-        var multicastPatch = GetType().GetMethodByName(nameof(MulticastPatch));
-        foreach (var method in Reflection.MulticastMethodInfos)
-        {
-            _harmony.Patch(method, new HarmonyMethod(multicastPatch));
-        }
-
-        var clientPatch = GetType().GetMethodByName(nameof(ClientPatch));
-        foreach (var method in Reflection.ClientMethodInfos)
-        {
-            _harmony.Patch(method, new HarmonyMethod(clientPatch));
-        }
-    }
-
-    [SuppressMessage("ReSharper", "InconsistentNaming")]
-    private static bool ServerPatch(NetworkObject __instance, MethodInfo __originalMethod, object[] __args)
-    {
-        if (Instance.IsClientOnly)
-        {
-            var packet = GetInvokeMethodPacket(__originalMethod, __instance, __args);
-            Instance.ClientManager.SendPacket(packet);
-        }
-
-        return Instance.IsServer;
-    }
-
-    [SuppressMessage("ReSharper", "InconsistentNaming")]
-    private static bool MulticastPatch(NetworkObject __instance, MethodInfo __originalMethod, object[] __args)
-    {
-        if (Instance.IsClientOnly)
-        {
-            return true;
-        }
-
-        var packet = GetInvokeMethodPacket(__originalMethod, __instance, __args);
-        Instance.ServerManager.SendPacketToAll(packet, excludeLocalConnection: true);
-        return true;
-    }
-
-    [SuppressMessage("ReSharper", "InconsistentNaming")]
-    private static bool ClientPatch(NetworkObject __instance, MethodInfo __originalMethod, object[] __args)
-    {
-        if (Instance.IsServer && __instance.Owner is { IsLocal: false })
-        {
-            var packet = GetInvokeMethodPacket(__originalMethod, __instance, __args);
-            __instance.Owner.SendPacket(packet);
-            return false;
-        }
-
-        return true;
-    }
-
-    private static InvokeMethodPacket GetInvokeMethodPacket(MethodInfo methodInfo, NetworkObject networkObject,
+    internal static InvokeMethodPacket GetInvokeMethodPacket(MethodInfo methodInfo, NetworkObject networkObject,
         object[] args)
     {
         var methodId = Instance.MethodInfos.Get(methodInfo);

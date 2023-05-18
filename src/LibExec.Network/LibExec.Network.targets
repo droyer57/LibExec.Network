@@ -1,0 +1,5 @@
+<Project>
+    <Target Name="Patch" AfterTargets="Build">
+        <Exec Command="dotnet $(NuGetPackageRoot)libexec.network/0.0.1/tools/CodeGenerator.dll $(TargetPath)"/>
+    </Target>
+</Project>

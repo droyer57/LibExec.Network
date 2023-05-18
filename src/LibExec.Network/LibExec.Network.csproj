@@ -7,28 +7,38 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageId>LibExec.Network</PackageId>
         <Version>0.0.1</Version>
         <Authors>Damien Royer</Authors>
-        <IncludeBuildOutput>true</IncludeBuildOutput>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="LiteNetLib" Version="1.0.1.1" />
-        <PackageReference Include="Lib.Harmony" Version="2.3.0-alpha.5" />
+        <PackageReference Include="LiteNetLib" Version="1.0.1.1"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\LibExec.Network.SourceGenerators\LibExec.Network.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+        <ProjectReference Include="..\LibExec.Network.SourceGenerators\LibExec.Network.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
+        <None Include="..\LibExec.Network.SourceGenerators\bin\$(Configuration)\netstandard2.0\LibExec.Network.SourceGenerators.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="..\LibExec.Network.SourceGenerators\bin\$(Configuration)\netstandard2.0\LibExec.Network.SourceGenerators.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        <None Remove="LibExec.Network.csproj.DotSettings"/>
     </ItemGroup>
+
+    <Target Name="Prepack" BeforeTargets="Pack">
+        <Exec Command="dotnet publish $(MSBuildThisFileDirectory)../CodeGenerator/CodeGenerator.csproj -c Release"/>
+    </Target>
 
     <ItemGroup>
-        <None Remove="LibExec.Network.csproj.DotSettings" />
-    </ItemGroup>
+        <None Include="$(MSBuildThisFileDirectory)../CodeGenerator/bin/Release/net6.0/publish/*.dll;$(MSBuildThisFileDirectory)../CodeGenerator/bin/Release/net6.0/publish/*.json">
+            <Pack>true</Pack>
+            <PackagePath>tools</PackagePath>
+            <Visible>false</Visible>
+        </None>
 
+        <None Include="LibExec.Network.targets">
+            <Pack>true</Pack>
+            <PackagePath>build</PackagePath>
+        </None>
+    </ItemGroup>
 </Project>

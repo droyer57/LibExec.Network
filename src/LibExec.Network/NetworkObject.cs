@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace LibExec.Network;
 
 public abstract class NetworkObject
@@ -36,5 +38,49 @@ public abstract class NetworkObject
         {
             networkObject = null;
         }
+    }
+
+    // ReSharper disable once UnusedMember.Global
+    protected static bool ServerPatch(NetworkObject instance, MethodInfo originalMethod, object[] args)
+    {
+        var networkManager = NetworkManager.Instance;
+
+        if (networkManager.IsClientOnly)
+        {
+            var packet = NetworkManager.GetInvokeMethodPacket(originalMethod, instance, args);
+            networkManager.ClientManager.SendPacket(packet);
+        }
+
+        return networkManager.IsServer;
+    }
+
+    // ReSharper disable once UnusedMember.Global
+    protected static bool MulticastPatch(NetworkObject instance, MethodInfo originalMethod, object[] args)
+    {
+        var networkManager = NetworkManager.Instance;
+
+        if (networkManager.IsClientOnly)
+        {
+            return true;
+        }
+
+        var packet = NetworkManager.GetInvokeMethodPacket(originalMethod, instance, args);
+        networkManager.ServerManager.SendPacketToAll(packet, excludeLocalConnection: true);
+        return true;
+    }
+
+    // ReSharper disable once UnusedMember.Global
+    protected static bool ClientPatch(NetworkObject instance, MethodInfo originalMethod, object[] args)
+    {
+        var networkManager = NetworkManager.Instance;
+
+        if (networkManager.IsServer && instance.Owner is { IsLocal: false })
+        {
+            var packet = NetworkManager.GetInvokeMethodPacket(originalMethod, instance, args);
+            instance.Owner.SendPacket(packet);
+            return false;
+        }
+
+        return true;
     }
 }
