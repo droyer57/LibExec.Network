@@ -8,5 +8,5 @@ internal static class Constants
     public const string ServerPatchName = "ServerPatch";
     public const string ClientPatchName = "ClientPatch";
     public const string MulticastPatchName = "MulticastPatch";
-    public const string InternalClassName = "Internal";
+    public const string NetworkObjectClassName = "NetworkObject";
 }

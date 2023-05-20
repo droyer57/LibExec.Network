@@ -11,8 +11,9 @@ public sealed class NetworkManager
 
     internal const string Key = "DDurBXaw8sLsYs9x";
 
-    private readonly Dictionary<MethodInfo, Action<NetworkObject, object[]?>> _methods;
+    private readonly Dictionary<ushort, Action<NetworkObject, object[]?>> _methods = new();
     private readonly Dictionary<Type, Func<NetworkObject>> _networkObjectsCache = new();
+    private ushort _nextMethodId;
 
     public NetworkManager()
     {
@@ -30,12 +31,9 @@ public sealed class NetworkManager
         ServerManager = new ServerManager();
         ClientManager = new ClientManager();
 
-        var methods = Reflection.ServerMethodInfos.Concat(Reflection.MulticastMethodInfos)
-            .Concat(Reflection.ClientMethodInfos).ToArray();
-        MethodInfos = new BiDictionary<MethodInfo>(methods);
-        _methods = methods.ToDictionary(x => x, x => x.CreateMethod());
-
-        MethodsParams = methods.ToDictionary(x => x, x => x.GetParameters().Select(p => p.ParameterType).ToArray());
+        AddMethods(Reflection.ServerMethodInfos);
+        AddMethods(Reflection.ClientMethodInfos);
+        AddMethods(Reflection.MulticastMethodInfos);
 
         ushort index = 0;
         FieldSetters = Reflection.ReplicateFieldInfos.ToDictionary(_ => index++, x => x.CreateSetter());
@@ -51,13 +49,12 @@ public sealed class NetworkManager
 
     #region Internal
 
-    internal BiDictionary<MethodInfo> MethodInfos { get; }
     internal Dictionary<uint, NetworkObject> NetworkObjects { get; } = new();
     internal BiDictionary<Type> NetworkObjectTypes { get; }
     internal BiDictionary<Type, byte> Types { get; } = new(); // todo: useless for now ?
     internal Dictionary<Type, Action<NetDataWriter, object>> NetWriterActions { get; } = new();
     internal Dictionary<Type, Func<NetDataReader, object>> NetReaderActions { get; } = new();
-    internal Dictionary<MethodInfo, Type[]> MethodsParams { get; }
+    internal Dictionary<ushort, Type[]> MethodsParams { get; } = new();
     internal Dictionary<ushort, Action<NetworkObject, object>> FieldSetters { get; }
     internal Dictionary<ushort, Type> FieldParam { get; }
 
@@ -102,8 +99,7 @@ public sealed class NetworkManager
     internal void OnInvokeMethod(InvokeMethodPacket packet)
     {
         var instance = NetworkObjects[packet.Method.NetworkObjectId];
-        var methodInfo = MethodInfos.Get(packet.Method.MethodId);
-        var method = _methods[methodInfo];
+        var method = _methods[packet.Method.MethodId];
 
         method.Invoke(instance, packet.Method.Args);
     }
@@ -220,11 +216,11 @@ public sealed class NetworkManager
     #region Private
 
     // ReSharper disable once UnusedMember.Local
-    private static bool ServerPatch(NetworkObject instance, MethodInfo originalMethod, object[] args)
+    private static bool ServerPatch(NetworkObject instance, ushort methodId, object[] args)
     {
         if (Instance.IsClientOnly)
         {
-            var packet = GetInvokeMethodPacket(originalMethod, instance, args);
+            var packet = GetInvokeMethodPacket(methodId, instance, args);
             Instance.ClientManager.SendPacket(packet);
         }
 
@@ -232,24 +228,24 @@ public sealed class NetworkManager
     }
 
     // ReSharper disable once UnusedMember.Local
-    private static bool MulticastPatch(NetworkObject instance, MethodInfo originalMethod, object[] args)
+    private static bool MulticastPatch(NetworkObject instance, ushort methodId, object[] args)
     {
         if (Instance.IsClientOnly)
         {
             return true;
         }
 
-        var packet = GetInvokeMethodPacket(originalMethod, instance, args);
+        var packet = GetInvokeMethodPacket(methodId, instance, args);
         Instance.ServerManager.SendPacketToAll(packet, excludeLocalConnection: true);
         return true;
     }
 
     // ReSharper disable once UnusedMember.Local
-    private static bool ClientPatch(NetworkObject instance, MethodInfo originalMethod, object[] args)
+    private static bool ClientPatch(NetworkObject instance, ushort methodId, object[] args)
     {
         if (Instance.IsServer && instance.Owner is { IsLocal: false })
         {
-            var packet = GetInvokeMethodPacket(originalMethod, instance, args);
+            var packet = GetInvokeMethodPacket(methodId, instance, args);
             instance.Owner.SendPacket(packet);
             return false;
         }
@@ -257,12 +253,20 @@ public sealed class NetworkManager
         return true;
     }
 
-    private static InvokeMethodPacket GetInvokeMethodPacket(MethodInfo methodInfo, NetworkObject networkObject,
+    private static InvokeMethodPacket GetInvokeMethodPacket(ushort methodId, NetworkObject networkObject,
         object[] args)
     {
-        var methodId = Instance.MethodInfos.Get(methodInfo);
         var netMethod = new NetMethod(methodId, networkObject.Id, args);
         return new InvokeMethodPacket(netMethod);
+    }
+
+    private void AddMethods(IEnumerable<MethodInfo> methods)
+    {
+        foreach (var method in methods)
+        {
+            _methods.Add(_nextMethodId, method.CreateMethod());
+            MethodsParams.Add(_nextMethodId++, method.GetParameters().Select(x => x.ParameterType).ToArray());
+        }
     }
 
     private void RegisterTypes(params Type[] types)

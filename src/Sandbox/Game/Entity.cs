@@ -7,13 +7,13 @@ public sealed class Entity : NetworkObject
     public int Value { get; private set; }
 
     [Server]
-    public void IncrementValueServer()
+    public void SetValueServer()
     {
-        IncrementValueMulticast(5);
+        SetValueMulticast(5);
     }
 
     [Multicast]
-    private void IncrementValueMulticast(int delta)
+    private void SetValueMulticast(int delta)
     {
         Value += delta;
     }

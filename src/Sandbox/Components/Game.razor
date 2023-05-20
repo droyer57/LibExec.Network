@@ -34,7 +34,7 @@
         @foreach (var entity in NetworkManager.Query<Entity>())
         {
             <Stack ClassName="border p-2 border-gray-400 mt-2">
-                <DefaultButton Text="@entity.Value.ToString()" OnClick="entity.IncrementValueServer"/>
+                <DefaultButton Text="@entity.Value.ToString()" OnClick="entity.SetValueServer"/>
                 <Separator ClassName="my-2 border-t border-gray-400"/>
                 <DefaultButton Icon="ChromeClose" IconClassName="text-xs" OnClick="() => DestroyObject(entity)"/>
             </Stack>
