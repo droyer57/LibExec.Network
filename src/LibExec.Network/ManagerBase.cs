@@ -19,6 +19,7 @@ public abstract class ManagerBase
         PacketProcessor = new PacketProcessor();
         PacketProcessor.RegisterType<NetworkObjectType>();
         PacketProcessor.RegisterType<NetMethod>();
+        PacketProcessor.RegisterType<NetField>();
 
         RegisterPacket<InvokeMethodPacket>(NetworkManager.OnInvokeMethod);
     }

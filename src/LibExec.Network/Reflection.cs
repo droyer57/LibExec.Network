@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using System.Reflection;
 
 namespace LibExec.Network;
@@ -33,6 +32,10 @@ internal sealed class Reflection
             .ToArray();
         ClientMethodInfos = NetworkObjectTypes.SelectMany(x => x.GetMethodsByAttribute<ClientAttribute>()).ToArray();
 
+        ReplicateFieldInfos = NetworkObjectTypes
+            .SelectMany(x => x.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+            .Where(x => x.GetCustomAttribute<ReplicateAttribute>() != null).ToArray();
+
         Activator.CreateInstance(typeof(InternalNetworkInit), true);
         var networkInitClassType = entryAssembly.GetTypes().First(x => x.Name == NetworkInitClassName);
         Activator.CreateInstance(networkInitClassType, true);
@@ -44,23 +47,5 @@ internal sealed class Reflection
     public static MethodInfo[] ServerMethodInfos { get; private set; } = null!;
     public static MethodInfo[] MulticastMethodInfos { get; private set; } = null!;
     public static MethodInfo[] ClientMethodInfos { get; private set; } = null!;
-
-    public static Action<object, object[]?> CreateMethod(MethodInfo methodInfo)
-    {
-        var instance = Expression.Parameter(typeof(object), "instance");
-        var parameters = Expression.Parameter(typeof(object[]), "parameters");
-
-        var instanceCast = Expression.Convert(instance, methodInfo.DeclaringType!);
-
-        var parametersCasts = new List<Expression>();
-        var parameterInfos = methodInfo.GetParameters();
-        for (var i = 0; i < parameterInfos.Length; i++)
-        {
-            var data = Expression.ArrayIndex(parameters, Expression.Constant(i));
-            parametersCasts.Add(Expression.Convert(data, parameterInfos[i].ParameterType));
-        }
-
-        var call = Expression.Call(instanceCast, methodInfo, parametersCasts);
-        return Expression.Lambda<Action<object, object[]?>>(call, instance, parameters).Compile();
-    }
+    public static FieldInfo[] ReplicateFieldInfos { get; private set; } = null!;
 }

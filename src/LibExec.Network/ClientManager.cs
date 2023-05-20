@@ -8,6 +8,7 @@ public sealed class ClientManager : ManagerBase
     {
         RegisterPacket<SpawnNetworkObjectPacket>(OnSpawnNetworkObject);
         RegisterPacket<DestroyNetworkObjectPacket>(OnDestroyNetworkObject);
+        RegisterPacket<UpdateFieldPacket>(NetworkManager.OnUpdateField);
     }
 
     public string Address { get; internal set; } = NetworkManager.LocalAddress;

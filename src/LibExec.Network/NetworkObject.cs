@@ -7,9 +7,9 @@ public abstract class NetworkObject
     public bool IsOwner => ClientManager.IsLocalPeerId(OwnerId);
     public NetConnection? Owner { get; internal set; }
 
-    private static NetworkManager NetworkManager => NetworkManager.Instance;
-    private static ClientManager ClientManager => NetworkManager.ClientManager;
-    private static ServerManager ServerManager => NetworkManager.ServerManager;
+    protected static NetworkManager NetworkManager => NetworkManager.Instance;
+    protected static ClientManager ClientManager => NetworkManager.ClientManager;
+    protected static ServerManager ServerManager => NetworkManager.ServerManager;
 
     public bool IsValid => NetworkManager.NetworkObjects.ContainsKey(Id);
 

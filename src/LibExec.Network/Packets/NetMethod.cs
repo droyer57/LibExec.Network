@@ -22,9 +22,11 @@ public struct NetMethod : INetSerializable
         writer.Put(MethodId);
         writer.Put(NetworkObjectId);
 
-        foreach (var arg in Args)
+        var methodInfo = NetworkManager.MethodInfos.Get(MethodId);
+        var types = NetworkManager.MethodsParams[methodInfo];
+        for (var i = 0; i < types.Length; i++)
         {
-            NetworkManager.NetWriterActions[arg.GetType()].Invoke(writer, arg);
+            NetworkManager.NetWriterActions[types[i]].Invoke(writer, Args[i]);
         }
     }
 

@@ -11,7 +11,7 @@ public sealed class NetworkManager
 
     internal const string Key = "DDurBXaw8sLsYs9x";
 
-    private readonly Dictionary<MethodInfo, Action<object, object[]?>> _methods;
+    private readonly Dictionary<MethodInfo, Action<NetworkObject, object[]?>> _methods;
     private readonly Dictionary<Type, Func<NetworkObject>> _networkObjectsCache = new();
 
     public NetworkManager()
@@ -33,9 +33,14 @@ public sealed class NetworkManager
         var methods = Reflection.ServerMethodInfos.Concat(Reflection.MulticastMethodInfos)
             .Concat(Reflection.ClientMethodInfos).ToArray();
         MethodInfos = new BiDictionary<MethodInfo>(methods);
-        _methods = methods.ToDictionary(x => x, Reflection.CreateMethod);
+        _methods = methods.ToDictionary(x => x, x => x.CreateMethod());
 
         MethodsParams = methods.ToDictionary(x => x, x => x.GetParameters().Select(p => p.ParameterType).ToArray());
+
+        ushort index = 0;
+        FieldSetters = Reflection.ReplicateFieldInfos.ToDictionary(_ => index++, x => x.CreateSetter());
+        index = 0;
+        FieldParam = Reflection.ReplicateFieldInfos.ToDictionary(_ => index++, x => x.FieldType);
 
         RegisterTypes(typeof(byte), typeof(sbyte), typeof(short), typeof(ushort), typeof(int), typeof(uint),
             typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(bool), typeof(string), typeof(char),
@@ -53,6 +58,8 @@ public sealed class NetworkManager
     internal Dictionary<Type, Action<NetDataWriter, object>> NetWriterActions { get; } = new();
     internal Dictionary<Type, Func<NetDataReader, object>> NetReaderActions { get; } = new();
     internal Dictionary<MethodInfo, Type[]> MethodsParams { get; }
+    internal Dictionary<ushort, Action<NetworkObject, object>> FieldSetters { get; }
+    internal Dictionary<ushort, Type> FieldParam { get; }
 
     internal PacketProcessor PacketProcessor =>
         IsServer ? ServerManager.PacketProcessor : ClientManager.PacketProcessor;
@@ -99,6 +106,20 @@ public sealed class NetworkManager
         var method = _methods[methodInfo];
 
         method.Invoke(instance, packet.Method.Args);
+    }
+
+    internal void OnUpdateField(UpdateFieldPacket packet)
+    {
+        var instance = NetworkObjects[packet.Field.NetworkObjectId];
+        var setter = FieldSetters[packet.Field.FieldId];
+        setter.Invoke(instance, packet.Field.Value);
+    }
+
+    // todo: tmp
+    public void SendField(ushort id, uint networkObjectId, object value)
+    {
+        var packet = new UpdateFieldPacket(new NetField(networkObjectId, id, value));
+        ServerManager.SendPacketToAll(packet, excludeLocalConnection: true);
     }
 
     internal void InvokeNetworkEvent()
@@ -197,12 +218,6 @@ public sealed class NetworkManager
     #endregion
 
     #region Private
-
-    private static bool TestPatch()
-    {
-        Console.WriteLine("Test Patch");
-        return true;
-    }
 
     // ReSharper disable once UnusedMember.Local
     private static bool ServerPatch(NetworkObject instance, MethodInfo originalMethod, object[] args)

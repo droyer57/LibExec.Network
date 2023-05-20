@@ -14,6 +14,7 @@ internal static class Program
 
         var generator = new Generator(args[0]);
         generator.AddCodeGenerator<RpcCodeGenerator>();
+        generator.AddCodeGenerator<ReplicateCodeGenerator>();
         generator.Start();
         generator.Save();
     }

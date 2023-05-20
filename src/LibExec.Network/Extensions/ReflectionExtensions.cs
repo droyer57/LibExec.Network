@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace LibExec.Network;
@@ -25,5 +26,39 @@ internal static class ReflectionExtensions
     {
         return type.GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static) ??
                throw new InvalidOperationException(nameof(GetMethodByName));
+    }
+
+    public static Action<NetworkObject, object> CreateSetter(this FieldInfo field)
+    {
+        var targetExp = Expression.Parameter(typeof(NetworkObject), "target");
+        var valueExp = Expression.Parameter(typeof(object), "value");
+
+        var targetCast = Expression.Convert(targetExp, field.DeclaringType!);
+        var valueCast = Expression.Convert(valueExp, field.FieldType);
+
+        var fieldExp = Expression.Field(targetCast, field);
+        var assignExp = Expression.Assign(fieldExp, valueCast);
+
+        var setter = Expression.Lambda<Action<NetworkObject, object>>(assignExp, targetExp, valueExp).Compile();
+        return setter;
+    }
+
+    public static Action<NetworkObject, object[]?> CreateMethod(this MethodInfo methodInfo)
+    {
+        var instance = Expression.Parameter(typeof(NetworkObject), "instance");
+        var parameters = Expression.Parameter(typeof(object[]), "parameters");
+
+        var instanceCast = Expression.Convert(instance, methodInfo.DeclaringType!);
+
+        var parametersCasts = new List<Expression>();
+        var parameterInfos = methodInfo.GetParameters();
+        for (var i = 0; i < parameterInfos.Length; i++)
+        {
+            var data = Expression.ArrayIndex(parameters, Expression.Constant(i));
+            parametersCasts.Add(Expression.Convert(data, parameterInfos[i].ParameterType));
+        }
+
+        var call = Expression.Call(instanceCast, methodInfo, parametersCasts);
+        return Expression.Lambda<Action<NetworkObject, object[]?>>(call, instance, parameters).Compile();
     }
 }
