@@ -3,24 +3,17 @@ using System.Linq;
 using System.Reflection;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using static CodeGenerator.Constants;
 
 namespace CodeGenerator;
 
 internal sealed class RpcCodeGenerator : CodeGenerator
 {
-    private const string ServerAttributeName = "ServerAttribute";
-    private const string ClientAttributeName = "ClientAttribute";
-    private const string MulticastAttributeName = "MulticastAttribute";
     private const string GetCurrentMethodName = "GetCurrentMethod";
-    private const string ServerPatchName = "ServerPatch";
-    private const string ClientPatchName = "ClientPatch";
-    private const string MulticastPatchName = "MulticastPatch";
     private readonly Dictionary<string, MethodReference> _methodReferences = new();
     private MethodDefinition _clientPatchMethod = null!;
     private MethodReference _getCurrentMethodRef = null!;
     private MethodDefinition _multicastPatchMethod = null!;
-    private TypeReference _objectRef = null!;
-
     private MethodDefinition _serverPatchMethod = null!;
 
     protected override void Process()
@@ -29,35 +22,40 @@ internal sealed class RpcCodeGenerator : CodeGenerator
         _clientPatchMethod = LibModule.Types.SelectMany(x => x.Methods).First(x => x.Name == ClientPatchName);
         _multicastPatchMethod = LibModule.Types.SelectMany(x => x.Methods).First(x => x.Name == MulticastPatchName);
 
-        _getCurrentMethodRef = AppModule.ImportReference(typeof(MethodBase).GetMethod(GetCurrentMethodName));
-        _objectRef = AppModule.ImportReference(typeof(object));
+        _serverPatchMethod.IsPublic = true;
+        _clientPatchMethod.IsPublic = true;
+        _multicastPatchMethod.IsPublic = true;
 
-        _methodReferences.Add(ServerAttributeName, AppModule.ImportReference(_serverPatchMethod));
-        _methodReferences.Add(ClientAttributeName, AppModule.ImportReference(_clientPatchMethod));
-        _methodReferences.Add(MulticastAttributeName, AppModule.ImportReference(_multicastPatchMethod));
+        _getCurrentMethodRef = Module.ImportReference(typeof(MethodBase).GetMethod(GetCurrentMethodName));
+
+        _methodReferences.Add(ServerAttributeName, Module.ImportReference(_serverPatchMethod));
+        _methodReferences.Add(ClientAttributeName, Module.ImportReference(_clientPatchMethod));
+        _methodReferences.Add(MulticastAttributeName, Module.ImportReference(_multicastPatchMethod));
 
         Setup(GetData, Execute);
     }
 
     private IEnumerable<MethodDefinition> GetData()
     {
-        return AppModule.Types.Where(x => x.IsPublic).SelectMany(x => x.Methods).Where(x => x.HasBody);
+        return Module.Types.Where(x => x.IsPublic).SelectMany(x => x.Methods).Where(x => x.HasBody);
     }
 
     private void Execute(MethodDefinition method)
     {
+        // ServerPatch(this, MethodBase.GetCurrentMethod(), new object[] { ...args });
+        // todo: find a better way than MethodBase.GetCurrentMethod()
+
         var attribute = method.CustomAttributes.FirstOrDefault(x =>
             x.AttributeType.Name is ServerAttributeName or ClientAttributeName or MulticastAttributeName);
 
         if (attribute == null) return;
 
         ExtendedIlProcessor extendedIlProcessor = method.Body.GetILProcessor();
-        var ilProcessor = (ILProcessor)extendedIlProcessor;
 
         extendedIlProcessor.EmitFirst(OpCodes.Ldarg_0);
         extendedIlProcessor.EmitFirst(OpCodes.Call, _getCurrentMethodRef);
         extendedIlProcessor.EmitFirst(OpCodes.Ldc_I4, method.Parameters.Count);
-        extendedIlProcessor.EmitFirst(OpCodes.Newarr, _objectRef);
+        extendedIlProcessor.EmitFirst(OpCodes.Newarr, Module.TypeSystem.Object);
 
         for (var i = 0; i < method.Parameters.Count; i++)
         {

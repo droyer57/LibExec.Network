@@ -1,12 +1,11 @@
 ﻿// Original code from https://github.com/RevenantX/LiteNetLib
 
-using System;
-using System.Reflection;
-using System.Collections.Generic;
 using System.Net;
+using System.Reflection;
 using System.Runtime.Serialization;
+using LiteNetLib.Utils;
 
-namespace LiteNetLib.Utils
+namespace LibExec.Network
 {
     public class InvalidTypeException : ArgumentException
     {
@@ -41,12 +40,12 @@ namespace LiteNetLib.Utils
 
         private abstract class FastCallSpecific<TClass, TProperty> : FastCall<TClass>
         {
-            protected Func<TClass, TProperty> Getter;
-            protected Action<TClass, TProperty> Setter;
-            protected Func<TClass, TProperty[]> GetterArr;
-            protected Action<TClass, TProperty[]> SetterArr;
-            protected Func<TClass, List<TProperty>> GetterList;
-            protected Action<TClass, List<TProperty>> SetterList;
+            protected Func<TClass, TProperty> Getter = null!;
+            protected Action<TClass, TProperty> Setter = null!;
+            protected Func<TClass, TProperty[]> GetterArr = null!;
+            protected Action<TClass, TProperty[]> SetterArr = null!;
+            protected Func<TClass, List<TProperty>> GetterList = null!;
+            protected Action<TClass, List<TProperty>> SetterList = null!;
 
             public override void ReadArray(TClass inf, NetDataReader r) { throw new InvalidTypeException("Unsupported type: " + typeof(TProperty) + "[]"); }
             public override void WriteArray(TClass inf, NetDataWriter w) { throw new InvalidTypeException("Unsupported type: " + typeof(TProperty) + "[]"); }
@@ -84,11 +83,11 @@ namespace LiteNetLib.Utils
             protected List<TProperty> WriteListHelper(TClass inf, NetDataWriter w, out int len)
             {
                 var list = GetterList(inf);
-                if (list == null)
+                if (list == null!)
                 {
                     len = 0;
                     w.Put(0);
-                    return null;
+                    return null!;
                 }
                 len = list.Count;
                 w.Put((ushort)len);
@@ -444,7 +443,7 @@ namespace LiteNetLib.Utils
                 PropertyType = propertyType;
             }
             public override void Read(T inf, NetDataReader r) { Property.SetValue(inf, Enum.ToObject(PropertyType, r.GetByte()), null); }
-            public override void Write(T inf, NetDataWriter w) { w.Put((byte)Property.GetValue(inf, null)); }
+            public override void Write(T inf, NetDataWriter w) { w.Put((byte)Property.GetValue(inf, null)!); }
             public override void ReadArray(T inf, NetDataReader r) { throw new InvalidTypeException("Unsupported type: Enum[]"); }
             public override void WriteArray(T inf, NetDataWriter w) { throw new InvalidTypeException("Unsupported type: Enum[]"); }
             public override void ReadList(T inf, NetDataReader r) { throw new InvalidTypeException("Unsupported type: List<Enum>"); }
@@ -455,12 +454,12 @@ namespace LiteNetLib.Utils
         {
             public EnumIntSerializer(PropertyInfo property, Type propertyType) : base(property, propertyType) { }
             public override void Read(T inf, NetDataReader r) { Property.SetValue(inf, Enum.ToObject(PropertyType, r.GetInt()), null); }
-            public override void Write(T inf, NetDataWriter w) { w.Put((int)Property.GetValue(inf, null)); }
+            public override void Write(T inf, NetDataWriter w) { w.Put((int)Property.GetValue(inf, null)!); }
         }
 
         private sealed class ClassInfo<T>
         {
-            public static ClassInfo<T> Instance;
+            public static ClassInfo<T> Instance = null!;
             private readonly FastCall<T>[] _serializers;
             private readonly int _membersCount;
 
@@ -557,7 +556,7 @@ namespace LiteNetLib.Utils
             _registeredTypes.Add(typeof(T), new CustomTypeStatic<T>(writer, reader));
         }
 
-        private NetDataWriter _writer;
+        private NetDataWriter _writer = null!;
         private readonly int _maxStringLength;
         private readonly Dictionary<Type, CustomType> _registeredTypes = new Dictionary<Type, CustomType>();
 
@@ -604,7 +603,7 @@ namespace LiteNetLib.Utils
                 if (getMethod == null || setMethod == null)
                     continue;
 
-                FastCall<T> serialzer = null;
+                FastCall<T> serialzer = null!;
                 if (propertyType.IsEnum)
                 {
                     var underlyingType = Enum.GetUnderlyingType(propertyType);
@@ -645,7 +644,7 @@ namespace LiteNetLib.Utils
                     serialzer = new IPEndPointSerializer<T>();
                 else
                 {
-                    _registeredTypes.TryGetValue(elementType, out var customType);
+                    _registeredTypes.TryGetValue(elementType!, out var customType);
                     if (customType != null)
                         serialzer = customType.Get<T>();
                 }
@@ -686,7 +685,7 @@ namespace LiteNetLib.Utils
             }
             catch
             {
-                return null;
+                return null!;
             }
             return result;
         }

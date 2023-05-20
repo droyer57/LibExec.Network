@@ -7,12 +7,14 @@ namespace CodeGenerator;
 internal abstract class CodeGenerator
 {
     protected ModuleDefinition LibModule { get; private set; } = null!;
-    protected ModuleDefinition AppModule { get; private set; } = null!;
+    protected ModuleDefinition Module { get; private set; } = null!;
+    protected Resource Resource { get; private set; } = null!;
 
-    public void Initialize(ModuleDefinition libModule, ModuleDefinition appModule)
+    public void Initialize(ModuleDefinition libModule, ModuleDefinition module, Resource resource)
     {
         LibModule = libModule;
-        AppModule = appModule;
+        Module = module;
+        Resource = resource;
         Process();
     }
 

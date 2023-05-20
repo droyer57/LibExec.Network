@@ -198,7 +198,51 @@ public sealed class NetworkManager
 
     #region Private
 
-    internal static InvokeMethodPacket GetInvokeMethodPacket(MethodInfo methodInfo, NetworkObject networkObject,
+    private static bool TestPatch()
+    {
+        Console.WriteLine("Test Patch");
+        return true;
+    }
+
+    // ReSharper disable once UnusedMember.Local
+    private static bool ServerPatch(NetworkObject instance, MethodInfo originalMethod, object[] args)
+    {
+        if (Instance.IsClientOnly)
+        {
+            var packet = GetInvokeMethodPacket(originalMethod, instance, args);
+            Instance.ClientManager.SendPacket(packet);
+        }
+
+        return Instance.IsServer;
+    }
+
+    // ReSharper disable once UnusedMember.Local
+    private static bool MulticastPatch(NetworkObject instance, MethodInfo originalMethod, object[] args)
+    {
+        if (Instance.IsClientOnly)
+        {
+            return true;
+        }
+
+        var packet = GetInvokeMethodPacket(originalMethod, instance, args);
+        Instance.ServerManager.SendPacketToAll(packet, excludeLocalConnection: true);
+        return true;
+    }
+
+    // ReSharper disable once UnusedMember.Local
+    private static bool ClientPatch(NetworkObject instance, MethodInfo originalMethod, object[] args)
+    {
+        if (Instance.IsServer && instance.Owner is { IsLocal: false })
+        {
+            var packet = GetInvokeMethodPacket(originalMethod, instance, args);
+            instance.Owner.SendPacket(packet);
+            return false;
+        }
+
+        return true;
+    }
+
+    private static InvokeMethodPacket GetInvokeMethodPacket(MethodInfo methodInfo, NetworkObject networkObject,
         object[] args)
     {
         var methodId = Instance.MethodInfos.Get(methodInfo);
