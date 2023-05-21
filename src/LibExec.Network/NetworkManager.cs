@@ -112,10 +112,15 @@ public sealed class NetworkManager
     }
 
     // todo: tmp
-    public void SendField(ushort id, uint networkObjectId, object value)
+    public static void SendField(ushort id, uint networkObjectId, object oldValue, object value)
     {
+        if (value == oldValue)
+        {
+            return;
+        }
+
         var packet = new UpdateFieldPacket(new NetField(networkObjectId, id, value));
-        ServerManager.SendPacketToAll(packet, excludeLocalConnection: true);
+        Instance.ServerManager.SendPacketToAll(packet, excludeLocalConnection: true);
     }
 
     internal void InvokeNetworkEvent()

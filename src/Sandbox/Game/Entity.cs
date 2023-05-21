@@ -4,17 +4,22 @@ namespace Sandbox.Game;
 
 public sealed class Entity : NetworkObject
 {
-    public int Value { get; private set; }
+    [Replicate]
+    private int _value;
+    // public int Value { get; private set; }
+
+    public int Value => _value; // todo: tmp
 
     [Server]
     public void SetValueServer()
     {
-        SetValueMulticast(5);
+        _value++;
+        // SetValueMulticast(5);
     }
 
     [Multicast]
     private void SetValueMulticast(int delta)
     {
-        Value += delta;
+        // Value += delta;
     }
 }

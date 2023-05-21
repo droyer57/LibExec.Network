@@ -32,9 +32,8 @@ internal sealed class Reflection
             .ToArray();
         ClientMethodInfos = NetworkObjectTypes.SelectMany(x => x.GetMethodsByAttribute<ClientAttribute>()).ToArray();
 
-        ReplicateFieldInfos = NetworkObjectTypes
-            .SelectMany(x => x.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
-            .Where(x => x.GetCustomAttribute<ReplicateAttribute>() != null).ToArray();
+        ReplicateFieldInfos =
+            NetworkObjectTypes.SelectMany(x => x.GetFieldsByAttribute<ReplicateAttribute>()).ToArray();
 
         Activator.CreateInstance(typeof(InternalNetworkInit), true);
         var networkInitClassType = entryAssembly.GetTypes().First(x => x.Name == NetworkInitClassName);

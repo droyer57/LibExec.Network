@@ -21,7 +21,8 @@ internal sealed class Generator
 
         var readerParameters = new ReaderParameters
         {
-            AssemblyResolver = resolver
+            AssemblyResolver = resolver,
+            ReadWrite = true
         };
 
         _modules.Add(ModuleDefinition.ReadModule(libFileName, readerParameters));
@@ -42,13 +43,8 @@ internal sealed class Generator
     {
         foreach (var module in _modules)
         {
-            var generatedFileName = Path.Combine(Path.GetDirectoryName(module.FileName)!, $"{module.FileName}.gen");
-
-            module.Write(generatedFileName);
+            module.Write();
             module.Dispose();
-
-            File.Copy(generatedFileName, module.FileName, true);
-            File.Delete(generatedFileName);
         }
     }
 

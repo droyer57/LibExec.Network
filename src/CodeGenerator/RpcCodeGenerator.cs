@@ -16,14 +16,12 @@ internal sealed class RpcCodeGenerator : CodeGenerator
 
     protected override void Process()
     {
-        var methods = Module.Types.Where(x => x.IsPublic && x.BaseType.Name == NetworkObjectClassName)
-            .SelectMany(x => x.Methods).Where(x => x.HasBody).ToArray();
-        var serverMethods =
-            methods.Where(x => x.CustomAttributes.Any(a => a.AttributeType.Name == ServerAttributeName)).ToArray();
-        var clientMethods =
-            methods.Where(x => x.CustomAttributes.Any(a => a.AttributeType.Name == ClientAttributeName)).ToArray();
-        var multicastMethods =
-            methods.Where(x => x.CustomAttributes.Any(a => a.AttributeType.Name == MulticastAttributeName)).ToArray();
+        var serverMethods = Resource.Methods
+            .Where(x => x.CustomAttributes.Any(a => a.AttributeType.Name == ServerAttributeName)).ToArray();
+        var clientMethods = Resource.Methods
+            .Where(x => x.CustomAttributes.Any(a => a.AttributeType.Name == ClientAttributeName)).ToArray();
+        var multicastMethods = Resource.Methods
+            .Where(x => x.CustomAttributes.Any(a => a.AttributeType.Name == MulticastAttributeName)).ToArray();
 
         AddMethods(serverMethods);
         AddMethods(clientMethods);

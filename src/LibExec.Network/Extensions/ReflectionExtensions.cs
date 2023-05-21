@@ -22,10 +22,11 @@ internal static class ReflectionExtensions
             .Where(x => x.GetCustomAttribute<T>() != null);
     }
 
-    public static MethodInfo GetMethodByName(this Type type, string name)
+    public static IEnumerable<FieldInfo> GetFieldsByAttribute<T>(this Type type)
+        where T : Attribute
     {
-        return type.GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static) ??
-               throw new InvalidOperationException(nameof(GetMethodByName));
+        return type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            .Where(x => x.GetCustomAttribute<T>() != null);
     }
 
     public static Action<NetworkObject, object> CreateSetter(this FieldInfo field)
