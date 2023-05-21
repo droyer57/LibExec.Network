@@ -44,6 +44,19 @@ internal static class ReflectionExtensions
         return setter;
     }
 
+    public static Func<NetworkObject, object> CreateGetter(this FieldInfo field)
+    {
+        var targetExp = Expression.Parameter(typeof(NetworkObject), "target");
+
+        var targetCast = Expression.Convert(targetExp, field.DeclaringType!);
+
+        var fieldExp = Expression.Field(targetCast, field);
+        var convertExp = Expression.Convert(fieldExp, typeof(object));
+
+        var getter = Expression.Lambda<Func<NetworkObject, object>>(convertExp, targetExp).Compile();
+        return getter;
+    }
+
     public static Action<NetworkObject, object[]?> CreateMethod(this MethodInfo methodInfo)
     {
         var instance = Expression.Parameter(typeof(NetworkObject), "instance");

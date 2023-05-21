@@ -6,32 +6,32 @@ public struct NetField : INetSerializable
 {
     private static NetworkManager NetworkManager => NetworkManager.Instance;
 
-    public NetField(uint networkObjectId, ushort fieldId, object value)
+    public NetField(uint networkObjectId, ushort id, object value)
     {
         NetworkObjectId = networkObjectId;
-        FieldId = fieldId;
+        Id = id;
         Value = value;
     }
 
     public uint NetworkObjectId { get; private set; }
-    public ushort FieldId { get; private set; }
+    public ushort Id { get; private set; }
     public object Value { get; private set; }
 
     public void Serialize(NetDataWriter writer)
     {
         writer.Put(NetworkObjectId);
-        writer.Put(FieldId);
+        writer.Put(Id);
 
-        var type = NetworkManager.FieldParam[FieldId];
+        var type = NetworkManager.FieldInfos[Id].Type;
         NetworkManager.NetWriterActions[type].Invoke(writer, Value);
     }
 
     public void Deserialize(NetDataReader reader)
     {
         NetworkObjectId = reader.GetUInt();
-        FieldId = reader.GetUShort();
+        Id = reader.GetUShort();
 
-        var type = NetworkManager.FieldParam[FieldId];
+        var type = NetworkManager.FieldInfos[Id].Type;
         Value = NetworkManager.NetReaderActions[type].Invoke(reader);
     }
 }

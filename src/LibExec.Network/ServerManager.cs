@@ -80,14 +80,22 @@ public sealed class ServerManager : ManagerBase
 
     private void Spawn(NetworkObject networkObject, NetPeer peer)
     {
+        var networkObjectType = networkObject.GetType();
+
         var packet = new SpawnNetworkObjectPacket
         {
-            Type = networkObject.GetType(),
+            Type = networkObjectType,
             Id = networkObject.Id,
             OwnerId = networkObject.OwnerId
         };
 
         peer.SendPacket(packet);
+
+        var fields = NetworkManager.FieldInfos.Values.Where(x => x.DeclaringType == networkObjectType);
+        foreach (var field in fields)
+        {
+            NetworkManager.SendField(field.Id, networkObject.Id, null, field.GetValue(networkObject));
+        }
     }
 
     internal void SpawnWithInit(NetworkObject networkObject, NetPeer? owner)

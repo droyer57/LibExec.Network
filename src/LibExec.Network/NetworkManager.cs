@@ -35,10 +35,8 @@ public sealed class NetworkManager
         AddMethods(Reflection.ClientMethodInfos);
         AddMethods(Reflection.MulticastMethodInfos);
 
-        ushort index = 0;
-        FieldSetters = Reflection.ReplicateFieldInfos.ToDictionary(_ => index++, x => x.CreateSetter());
-        index = 0;
-        FieldParam = Reflection.ReplicateFieldInfos.ToDictionary(_ => index++, x => x.FieldType);
+        ushort nextId = 0;
+        FieldInfos = Reflection.ReplicateFieldInfos.ToDictionary(_ => nextId, x => new FastFieldInfo(x, nextId++));
 
         RegisterTypes(typeof(byte), typeof(sbyte), typeof(short), typeof(ushort), typeof(int), typeof(uint),
             typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(bool), typeof(string), typeof(char),
@@ -55,8 +53,7 @@ public sealed class NetworkManager
     internal Dictionary<Type, Action<NetDataWriter, object>> NetWriterActions { get; } = new();
     internal Dictionary<Type, Func<NetDataReader, object>> NetReaderActions { get; } = new();
     internal Dictionary<ushort, Type[]> MethodsParams { get; } = new();
-    internal Dictionary<ushort, Action<NetworkObject, object>> FieldSetters { get; }
-    internal Dictionary<ushort, Type> FieldParam { get; }
+    internal Dictionary<ushort, FastFieldInfo> FieldInfos { get; }
 
     internal PacketProcessor PacketProcessor =>
         IsServer ? ServerManager.PacketProcessor : ClientManager.PacketProcessor;
@@ -107,12 +104,10 @@ public sealed class NetworkManager
     internal void OnUpdateField(UpdateFieldPacket packet)
     {
         var instance = NetworkObjects[packet.Field.NetworkObjectId];
-        var setter = FieldSetters[packet.Field.FieldId];
-        setter.Invoke(instance, packet.Field.Value);
+        FieldInfos[packet.Field.Id].SetValue(instance, packet.Field.Value);
     }
 
-    // todo: tmp
-    public static void SendField(ushort id, uint networkObjectId, object oldValue, object value)
+    internal static void SendField(ushort id, uint networkObjectId, object? oldValue, object value)
     {
         if (value == oldValue)
         {
