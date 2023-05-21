@@ -3,7 +3,7 @@
 @inject NetworkManager NetworkManager
 
 <Stack ClassName="w-fit border p-5 m-2">
-    <TextBox Placeholder="Pseudo"/>
+    <TextBox Placeholder="Pseudo" @bind-Value="Pseudo"/>
     <Separator ClassName="my-1"/>
     <Stack Horizontal="true">
         <TextBox Placeholder="Address" ClassName="grow" @bind-Value="_address"/>
@@ -24,6 +24,8 @@
 </Stack>
 
 @code {
+    public static string Pseudo { get; private set; } = null!;
+
     private string _address = NetworkManager.LocalAddress;
     private string _port = NetworkManager.DefaultPort.ToString();
 

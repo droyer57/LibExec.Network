@@ -84,12 +84,14 @@ public sealed class NetworkManager
             LocalPlayer = networkObject;
         }
 
+        networkObject.OnSpawn();
         NetworkObjectEvent?.Invoke(networkObject, Network.NetworkObjectEvent.Spawned);
     }
 
     internal void RemoveNetworkObject(NetworkObject networkObject)
     {
         NetworkObjects.Remove(networkObject.Id);
+        networkObject.OnDestroy();
         NetworkObjectEvent?.Invoke(networkObject, Network.NetworkObjectEvent.Destroyed);
     }
 

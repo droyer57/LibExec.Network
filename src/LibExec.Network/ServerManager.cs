@@ -72,9 +72,11 @@ public sealed class ServerManager : ManagerBase
 
     private void SpawnToAll(NetworkObject networkObject, NetPeer? excludePeer = null)
     {
-        foreach (var peer in GetPeers(excludePeer))
+        // foreach (var peer in GetPeers(excludePeer))
+        var peers = GetPeers(excludePeer).ToArray(); // todo: check why foreach throw an exception 
+        for (var i = 0; i < peers.Length; i++)
         {
-            Spawn(networkObject, peer);
+            Spawn(networkObject, peers[i]);
         }
     }
 

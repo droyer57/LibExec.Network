@@ -15,7 +15,7 @@
     @foreach (var player in NetworkManager.Query<Player>())
     {
         <Stack ClassName="p-2 border ml-2 mb-2" AdditionalClassName="@GetPlayerClass(player)">
-            <p class="text-center">@player.Id</p>
+            <p class="text-center">@player.Pseudo</p>
 
             <Separator ClassName="mt-1 mb-2 border-t border-gray-400 self-stretch"/>
             <Stack ClassName="flex-wrap gap-1">

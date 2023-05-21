@@ -25,6 +25,14 @@ public abstract class NetworkObject
         ServerManager.Destroy(this);
     }
 
+    public virtual void OnSpawn()
+    {
+    }
+
+    public virtual void OnDestroy()
+    {
+    }
+
     public static T? UpdateRef<T>(T networkObject) where T : NetworkObject?
     {
         return networkObject?.IsValid == true ? networkObject : null;

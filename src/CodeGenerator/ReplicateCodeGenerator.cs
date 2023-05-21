@@ -53,7 +53,7 @@ internal sealed class ReplicateCodeGenerator : CodeGenerator
 
         var idField = field.DeclaringType.BaseType.Resolve().Properties.First(x => x.Name == "Id");
 
-        ilProcessor.Index = index - 6;
+        ilProcessor.Index = index - 2;
 
         ilProcessor.EmitIndex(OpCodes.Ldarg_0);
         ilProcessor.EmitIndex(OpCodes.Ldfld, field);
