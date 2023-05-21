@@ -10,8 +10,6 @@ public sealed class NetworkManager
     public const int DefaultPort = 1995;
 
     internal const string Key = "DDurBXaw8sLsYs9x";
-
-    private readonly Dictionary<ushort, Action<NetworkObject, object[]?>> _methods = new();
     private readonly Dictionary<Type, Func<NetworkObject>> _networkObjectsCache = new();
     private ushort _nextMethodId;
 
@@ -52,8 +50,8 @@ public sealed class NetworkManager
     internal BiDictionary<Type, byte> Types { get; } = new(); // todo: useless for now ?
     internal Dictionary<Type, Action<NetDataWriter, object>> NetWriterActions { get; } = new();
     internal Dictionary<Type, Func<NetDataReader, object>> NetReaderActions { get; } = new();
-    internal Dictionary<ushort, Type[]> MethodsParams { get; } = new();
     internal Dictionary<ushort, FastFieldInfo> FieldInfos { get; }
+    internal Dictionary<ushort, FastMethodInfo> Methods { get; } = new();
 
     internal PacketProcessor PacketProcessor =>
         IsServer ? ServerManager.PacketProcessor : ClientManager.PacketProcessor;
@@ -98,7 +96,7 @@ public sealed class NetworkManager
     internal void OnInvokeMethod(InvokeMethodPacket packet)
     {
         var instance = NetworkObjects[packet.Method.NetworkObjectId];
-        var method = _methods[packet.Method.MethodId];
+        var method = Methods[packet.Method.MethodId];
 
         method.Invoke(instance, packet.Method.Args);
     }
@@ -266,8 +264,7 @@ public sealed class NetworkManager
     {
         foreach (var method in methods)
         {
-            _methods.Add(_nextMethodId, method.CreateMethod());
-            MethodsParams.Add(_nextMethodId++, method.GetParameters().Select(x => x.ParameterType).ToArray());
+            Methods.Add(_nextMethodId, new FastMethodInfo(method, _nextMethodId++));
         }
     }
 

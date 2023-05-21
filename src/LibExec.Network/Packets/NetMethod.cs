@@ -22,7 +22,7 @@ public struct NetMethod : INetSerializable
         writer.Put(MethodId);
         writer.Put(NetworkObjectId);
 
-        var types = NetworkManager.MethodsParams[MethodId];
+        var types = NetworkManager.Methods[MethodId].Params;
         for (var i = 0; i < types.Length; i++)
         {
             NetworkManager.NetWriterActions[types[i]].Invoke(writer, Args[i]);
@@ -34,7 +34,7 @@ public struct NetMethod : INetSerializable
         MethodId = reader.GetUShort();
         NetworkObjectId = reader.GetUInt();
 
-        var types = NetworkManager.MethodsParams[MethodId];
+        var types = NetworkManager.Methods[MethodId].Params;
         Args = new object[types.Length];
         for (var i = 0; i < Args.Length; i++)
         {
