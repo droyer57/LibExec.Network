@@ -130,6 +130,7 @@ public sealed class NetworkManager
     public bool IsServerOnly => IsServer && !IsClient;
     public bool IsHost => IsServer && IsClient;
     public bool IsOffline => !IsServer && !IsClient;
+    public int UpdateTime => ServerManager.UpdateTime;
 
     public event Action<NetworkObject, NetworkObjectEvent>? NetworkObjectEvent;
     public event Action? NetworkEvent;
@@ -198,6 +199,12 @@ public sealed class NetworkManager
     public T? GetLocalPlayer<T>() where T : NetworkObject
     {
         return LocalPlayer as T;
+    }
+
+    public void Update()
+    {
+        ServerManager.Update();
+        ClientManager.Update();
     }
 
     #endregion

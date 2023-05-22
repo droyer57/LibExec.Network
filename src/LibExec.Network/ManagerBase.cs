@@ -42,18 +42,15 @@ public abstract class ManagerBase
 
     public bool IsRunning => Manager.IsRunning;
     public bool IsStarted => _connectionState == ConnectionState.Started;
+    internal int UpdateTime => Manager.UpdateTime;
 
     public event Action<ConnectionState>? ConnectionStateChangedEvent;
 
-    protected async Task PollEventsAsync()
+    internal void Update()
     {
-        while (Manager.IsRunning)
-        {
-            Manager.PollEvents();
-            await Task.Delay(Manager.UpdateTime);
-        }
+        if (!Manager.IsRunning) return;
 
-        ConnectionState = ConnectionState.Stopped;
+        Manager.PollEvents();
     }
 
     internal abstract void Start();

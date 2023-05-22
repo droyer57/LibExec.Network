@@ -24,7 +24,7 @@ public sealed class Player : NetworkObject
 
     public override void OnSpawn()
     {
-        if (IsOwner)
+        if (IsOwner && !string.IsNullOrEmpty(Setup.Pseudo))
         {
             SetPseudoServer(Setup.Pseudo);
         }

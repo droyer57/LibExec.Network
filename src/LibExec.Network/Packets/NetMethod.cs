@@ -25,6 +25,11 @@ public struct NetMethod : INetSerializable
         var types = NetworkManager.Methods[MethodId].Params;
         for (var i = 0; i < types.Length; i++)
         {
+            if (Args[i] == null)
+            {
+                throw new ArgumentNullException();
+            }
+
             writer.Put(types[i], Args[i]);
         }
     }

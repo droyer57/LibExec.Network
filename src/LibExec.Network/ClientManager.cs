@@ -26,8 +26,6 @@ public sealed class ClientManager : ManagerBase
         }
 
         Manager.Connect(Address, NetworkManager.Port, NetworkManager.Key);
-
-        Task.Run(PollEventsAsync);
     }
 
     protected override void OnPeerConnected(NetPeer peer)
@@ -40,6 +38,7 @@ public sealed class ClientManager : ManagerBase
     {
         Stop();
         Connection = null!;
+        ConnectionState = ConnectionState.Stopped;
     }
 
     private void OnSpawnNetworkObject(SpawnNetworkObjectPacket packet)

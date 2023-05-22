@@ -20,8 +20,6 @@ public sealed class ServerManager : ManagerBase
         }
 
         ConnectionState = ConnectionState.Started;
-
-        Task.Run(PollEventsAsync);
     }
 
     internal override void Stop()
@@ -31,6 +29,7 @@ public sealed class ServerManager : ManagerBase
         base.Stop();
 
         _nextId = 0;
+        ConnectionState = ConnectionState.Stopped;
     }
 
     protected override void OnConnectionRequest(ConnectionRequest request)
@@ -72,11 +71,11 @@ public sealed class ServerManager : ManagerBase
 
     private void SpawnToAll(NetworkObject networkObject, NetPeer? excludePeer = null)
     {
-        // foreach (var peer in GetPeers(excludePeer))
-        var peers = GetPeers(excludePeer).ToArray(); // todo: check why foreach throw an exception 
-        for (var i = 0; i < peers.Length; i++)
+        foreach (var peer in GetPeers(excludePeer))
+            // var peers = GetPeers(excludePeer).ToArray(); // todo: check why foreach throw an exception 
+            // for (var i = 0; i < peers.Length; i++)
         {
-            Spawn(networkObject, peers[i]);
+            Spawn(networkObject, peer);
         }
     }
 
@@ -93,11 +92,11 @@ public sealed class ServerManager : ManagerBase
 
         peer.SendPacket(packet);
 
-        var fields = NetworkManager.FieldInfos.Values.Where(x => x.DeclaringType == networkObjectType);
-        foreach (var field in fields)
-        {
-            NetworkManager.SendField(field.Id, networkObject.Id, null, field.GetValue(networkObject));
-        }
+        // var fields = NetworkManager.FieldInfos.Values.Where(x => x.DeclaringType == networkObjectType);
+        // foreach (var field in fields)
+        // {
+        //     NetworkManager.SendField(field.Id, networkObject.Id, null, field.GetValue(networkObject));
+        // }
     }
 
     internal void SpawnWithInit(NetworkObject networkObject, NetPeer? owner)
