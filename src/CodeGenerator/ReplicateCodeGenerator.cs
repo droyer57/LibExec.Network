@@ -31,6 +31,8 @@ internal sealed class ReplicateCodeGenerator : CodeGenerator
 
         foreach (var method in Resource.NetworkObjectMethods)
         {
+            if (method.IsConstructor) continue;
+
             for (var i = 0; i < method.Body.Instructions.Count; i++)
             {
                 var instruction = method.Body.Instructions[i];

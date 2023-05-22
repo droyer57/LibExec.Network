@@ -51,6 +51,11 @@ public sealed class ClientManager : ManagerBase
             instance.Owner = NetConnection.Create(Manager.FirstPeer);
         }
 
+        foreach (var field in packet.Fields)
+        {
+            NetworkManager.FieldInfos[field.Id].SetValue(instance, field.Value);
+        }
+
         NetworkManager.AddNetworkObject(instance);
     }
 

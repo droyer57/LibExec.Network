@@ -72,8 +72,6 @@ public sealed class ServerManager : ManagerBase
     private void SpawnToAll(NetworkObject networkObject, NetPeer? excludePeer = null)
     {
         foreach (var peer in GetPeers(excludePeer))
-            // var peers = GetPeers(excludePeer).ToArray(); // todo: check why foreach throw an exception 
-            // for (var i = 0; i < peers.Length; i++)
         {
             Spawn(networkObject, peer);
         }
@@ -82,21 +80,21 @@ public sealed class ServerManager : ManagerBase
     private void Spawn(NetworkObject networkObject, NetPeer peer)
     {
         var networkObjectType = networkObject.GetType();
+        var networkObjectId = networkObject.Id;
+
+        var fields = NetworkManager.FieldInfosByType[networkObjectType]
+            .Select(x => new NetField(networkObjectId, x.Id, x.GetValue(networkObject))).Where(x => x.Value != null!)
+            .ToArray();
 
         var packet = new SpawnNetworkObjectPacket
         {
             Type = networkObjectType,
-            Id = networkObject.Id,
-            OwnerId = networkObject.OwnerId
+            Id = networkObjectId,
+            OwnerId = networkObject.OwnerId,
+            Fields = fields
         };
 
         peer.SendPacket(packet);
-
-        // var fields = NetworkManager.FieldInfos.Values.Where(x => x.DeclaringType == networkObjectType);
-        // foreach (var field in fields)
-        // {
-        //     NetworkManager.SendField(field.Id, networkObject.Id, null, field.GetValue(networkObject));
-        // }
     }
 
     internal void SpawnWithInit(NetworkObject networkObject, NetPeer? owner)

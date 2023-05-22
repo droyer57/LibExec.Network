@@ -33,6 +33,8 @@ public sealed class NetworkManager
 
         ushort nextId = 0;
         FieldInfos = Reflection.ReplicateFieldInfos.ToDictionary(_ => nextId, x => new FastFieldInfo(x, nextId++));
+        FieldInfosByType = FieldInfos.Values.GroupBy(x => x.DeclaringType)
+            .ToDictionary(x => x.Key, x => x.AsEnumerable());
     }
 
     #region Internal
@@ -40,6 +42,7 @@ public sealed class NetworkManager
     internal Dictionary<uint, NetworkObject> NetworkObjects { get; } = new();
     internal BiDictionary<Type> NetworkObjectTypes { get; }
     internal Dictionary<ushort, FastFieldInfo> FieldInfos { get; }
+    internal Dictionary<Type, IEnumerable<FastFieldInfo>> FieldInfosByType { get; }
     internal Dictionary<ushort, FastMethodInfo> Methods { get; } = new();
 
     internal PacketProcessor PacketProcessor =>
@@ -96,8 +99,14 @@ public sealed class NetworkManager
         FieldInfos[packet.Field.Id].SetValue(instance, packet.Field.Value);
     }
 
+    // ReSharper disable once UnusedMember.Global
     internal static void SendField(ushort id, uint networkObjectId, object? oldValue, object value)
     {
+        if (!Instance.IsServer)
+        {
+            throw new Exception("A replicated variable can only be updated by the server");
+        }
+
         if (value == oldValue)
         {
             return;
