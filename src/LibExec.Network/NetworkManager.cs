@@ -36,10 +36,6 @@ public sealed class NetworkManager
         ushort nextId = 0;
         FieldInfos = Reflection.ReplicateFieldInfos.ToDictionary(_ => nextId, x => new FastFieldInfo(x, nextId++));
 
-        RegisterTypes(typeof(byte), typeof(sbyte), typeof(short), typeof(ushort), typeof(int), typeof(uint),
-            typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(bool), typeof(string), typeof(char),
-            typeof(IPEndPoint), typeof(NetworkObject));
-
         InitNetActions();
     }
 
@@ -47,7 +43,6 @@ public sealed class NetworkManager
 
     internal Dictionary<uint, NetworkObject> NetworkObjects { get; } = new();
     internal BiDictionary<Type> NetworkObjectTypes { get; }
-    internal BiDictionary<Type, byte> Types { get; } = new(); // todo: useless for now ?
     internal Dictionary<Type, Action<NetDataWriter, object>> NetWriterActions { get; } = new();
     internal Dictionary<Type, Func<NetDataReader, object>> NetReaderActions { get; } = new();
     internal Dictionary<ushort, FastFieldInfo> FieldInfos { get; }
@@ -265,14 +260,6 @@ public sealed class NetworkManager
         foreach (var method in methods)
         {
             Methods.Add(_nextMethodId, new FastMethodInfo(method, _nextMethodId++));
-        }
-    }
-
-    private void RegisterTypes(params Type[] types)
-    {
-        foreach (var type in types)
-        {
-            Types.Add((byte)Types.Count, type);
         }
     }
 
