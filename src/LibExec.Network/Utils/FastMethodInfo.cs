@@ -2,7 +2,7 @@ using System.Reflection;
 
 namespace LibExec.Network;
 
-public sealed class FastMethodInfo
+internal sealed class FastMethodInfo
 {
     private readonly Action<NetworkObject, object[]?> _invoker;
 

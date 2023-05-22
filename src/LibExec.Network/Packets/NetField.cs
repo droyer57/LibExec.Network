@@ -23,7 +23,7 @@ public struct NetField : INetSerializable
         writer.Put(Id);
 
         var type = NetworkManager.FieldInfos[Id].Type;
-        NetworkManager.NetWriterActions[type].Invoke(writer, Value);
+        writer.Put(type, Value);
     }
 
     public void Deserialize(NetDataReader reader)
@@ -32,6 +32,6 @@ public struct NetField : INetSerializable
         Id = reader.GetUShort();
 
         var type = NetworkManager.FieldInfos[Id].Type;
-        Value = NetworkManager.NetReaderActions[type].Invoke(reader);
+        Value = reader.Get(type);
     }
 }

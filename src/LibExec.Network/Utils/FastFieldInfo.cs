@@ -2,7 +2,7 @@ using System.Reflection;
 
 namespace LibExec.Network;
 
-public sealed class FastFieldInfo
+internal sealed class FastFieldInfo
 {
     private readonly Func<NetworkObject, object> _getter;
     private readonly Action<NetworkObject, object> _setter;

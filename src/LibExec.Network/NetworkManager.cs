@@ -1,6 +1,4 @@
-﻿using System.Net;
-using System.Reflection;
-using LiteNetLib.Utils;
+﻿using System.Reflection;
 
 namespace LibExec.Network;
 
@@ -35,16 +33,12 @@ public sealed class NetworkManager
 
         ushort nextId = 0;
         FieldInfos = Reflection.ReplicateFieldInfos.ToDictionary(_ => nextId, x => new FastFieldInfo(x, nextId++));
-
-        InitNetActions();
     }
 
     #region Internal
 
     internal Dictionary<uint, NetworkObject> NetworkObjects { get; } = new();
     internal BiDictionary<Type> NetworkObjectTypes { get; }
-    internal Dictionary<Type, Action<NetDataWriter, object>> NetWriterActions { get; } = new();
-    internal Dictionary<Type, Func<NetDataReader, object>> NetReaderActions { get; } = new();
     internal Dictionary<ushort, FastFieldInfo> FieldInfos { get; }
     internal Dictionary<ushort, FastMethodInfo> Methods { get; } = new();
 
@@ -261,39 +255,6 @@ public sealed class NetworkManager
         {
             Methods.Add(_nextMethodId, new FastMethodInfo(method, _nextMethodId++));
         }
-    }
-
-    private void InitNetActions()
-    {
-        NetWriterActions.Add(typeof(byte), (writer, value) => writer.Put((byte)value));
-        NetWriterActions.Add(typeof(sbyte), (writer, value) => writer.Put((sbyte)value));
-        NetWriterActions.Add(typeof(short), (writer, value) => writer.Put((short)value));
-        NetWriterActions.Add(typeof(ushort), (writer, value) => writer.Put((ushort)value));
-        NetWriterActions.Add(typeof(int), (writer, value) => writer.Put((int)value));
-        NetWriterActions.Add(typeof(uint), (writer, value) => writer.Put((uint)value));
-        NetWriterActions.Add(typeof(long), (writer, value) => writer.Put((long)value));
-        NetWriterActions.Add(typeof(ulong), (writer, value) => writer.Put((ulong)value));
-        NetWriterActions.Add(typeof(float), (writer, value) => writer.Put((float)value));
-        NetWriterActions.Add(typeof(double), (writer, value) => writer.Put((double)value));
-        NetWriterActions.Add(typeof(bool), (writer, value) => writer.Put((bool)value));
-        NetWriterActions.Add(typeof(string), (writer, value) => writer.Put((string)value));
-        NetWriterActions.Add(typeof(char), (writer, value) => writer.Put((char)value));
-        NetWriterActions.Add(typeof(IPEndPoint), (writer, value) => writer.Put((IPEndPoint)value));
-
-        NetReaderActions.Add(typeof(byte), reader => reader.GetByte());
-        NetReaderActions.Add(typeof(sbyte), reader => reader.GetSByte());
-        NetReaderActions.Add(typeof(short), reader => reader.GetShort());
-        NetReaderActions.Add(typeof(ushort), reader => reader.GetUShort());
-        NetReaderActions.Add(typeof(int), reader => reader.GetInt());
-        NetReaderActions.Add(typeof(uint), reader => reader.GetUInt());
-        NetReaderActions.Add(typeof(long), reader => reader.GetLong());
-        NetReaderActions.Add(typeof(ulong), reader => reader.GetULong());
-        NetReaderActions.Add(typeof(float), reader => reader.GetFloat());
-        NetReaderActions.Add(typeof(double), reader => reader.GetDouble());
-        NetReaderActions.Add(typeof(bool), reader => reader.GetBool());
-        NetReaderActions.Add(typeof(string), reader => reader.GetString());
-        NetReaderActions.Add(typeof(char), reader => reader.GetChar());
-        NetReaderActions.Add(typeof(IPEndPoint), reader => reader.GetNetEndPoint());
     }
 
     #endregion
