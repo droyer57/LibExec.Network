@@ -5,6 +5,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibExec.Network.SourceGenerators", "LibExec.Network.SourceGenerators\LibExec.Network.SourceGenerators.csproj", "{38E11EF7-99E3-4D6D-B651-2B14A7127138}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sandbox", "Sandbox\Sandbox.csproj", "{1ADDB9DB-8938-488E-89AB-C145112BFED4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A537E9E2-F00D-4DD0-9C92-8022BE6A0592} = {A537E9E2-F00D-4DD0-9C92-8022BE6A0592}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeGenerator", "CodeGenerator\CodeGenerator.csproj", "{A537E9E2-F00D-4DD0-9C92-8022BE6A0592}"
 EndProject
