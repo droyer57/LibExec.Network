@@ -15,11 +15,13 @@ internal sealed class FastFieldInfo
 
         Type = fieldInfo.FieldType;
         DeclaringType = fieldInfo.DeclaringType ?? throw new ArgumentNullException(nameof(fieldInfo.DeclaringType));
+        Attribute = fieldInfo.GetCustomAttribute<ReplicateAttribute>()!;
     }
 
     public ushort Id { get; }
     public Type Type { get; }
     public Type DeclaringType { get; }
+    public ReplicateAttribute Attribute { get; }
 
     public object GetValue(NetworkObject instance)
     {

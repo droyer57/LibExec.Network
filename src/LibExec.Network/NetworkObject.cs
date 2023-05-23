@@ -2,6 +2,9 @@ namespace LibExec.Network;
 
 public abstract class NetworkObject
 {
+    public const int OwnerOnly = 1;
+    public const int SkipOwner = 2;
+
     public uint Id { get; internal set; }
     internal int OwnerId { get; set; }
     public bool IsOwner => ClientManager.IsLocalPeerId(OwnerId);
@@ -49,18 +52,24 @@ public abstract class NetworkObject
     // ReSharper disable once UnusedMember.Local
     private void UpdateField(object newValue, ushort fieldId)
     {
-        if (!NetworkManager.IsServer)
-        {
-            throw new Exception("A replicated variable can only be updated by the server");
-        }
+        var fieldInfo = NetworkManager.FieldInfos[fieldId];
+        var oldValue = fieldInfo.GetValue(this);
+        fieldInfo.SetValue(this, newValue);
 
-        var oldValue = NetworkManager.FieldInfos[fieldId].GetValue(this);
-
-        NetworkManager.FieldInfos[fieldId].SetValue(this, newValue);
-
-        if (!IsValid || newValue == oldValue) return;
+        if (!NetworkManager.IsServer || !IsValid || newValue == oldValue) return;
 
         var packet = new UpdateFieldPacket(new NetField(Id, fieldId, newValue));
-        ServerManager.SendPacketToAll(packet, excludeLocalConnection: true);
+        var replicateAttribute = fieldInfo.Attribute;
+
+
+        if (replicateAttribute.Condition == OwnerOnly)
+        {
+            Owner!.SendPacket(packet, excludeLocalConnection: true);
+        }
+        else
+        {
+            var excludeConnection = replicateAttribute.Condition == SkipOwner ? Owner : null;
+            ServerManager.SendPacketToAll(packet, excludeLocalConnection: true, excludeConnection: excludeConnection);
+        }
     }
 }

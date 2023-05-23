@@ -128,7 +128,7 @@
 
     private void AddObject()
     {
-        var entity = new Entity(); // todo: NetworkManager.Spawn<Entity>(); ?
+        var entity = new Entity();
         entity._value = new Random().Next(10) + 1;
         entity.Spawn();
     }

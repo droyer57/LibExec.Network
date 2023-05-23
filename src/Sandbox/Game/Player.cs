@@ -6,7 +6,7 @@ namespace Sandbox.Game;
 [NetworkPlayer]
 public sealed class Player : NetworkObject
 {
-    [Replicate] public string Pseudo = null!; // todo: make it a property
+    [Replicate(SkipOwner)] public string Pseudo = null!; // todo: make it a property
 
     public event Action? PingEvent;
 
@@ -26,6 +26,7 @@ public sealed class Player : NetworkObject
     {
         if (IsOwner && !string.IsNullOrEmpty(Setup.Pseudo))
         {
+            Pseudo = Setup.Pseudo;
             SetPseudoServer(Setup.Pseudo);
         }
     }

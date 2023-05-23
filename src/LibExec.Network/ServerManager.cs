@@ -79,12 +79,13 @@ public sealed class ServerManager : ManagerBase
         }
     }
 
-    private void Spawn(NetworkObject networkObject, NetPeer peer)
+    private static void Spawn(NetworkObject networkObject, NetPeer peer)
     {
         var networkObjectType = networkObject.GetType();
         var networkObjectId = networkObject.Id;
 
         var fields = NetworkManager.FieldInfosByType[networkObjectType]
+            .Where(x => x.Attribute.Condition != NetworkObject.OwnerOnly || networkObject.OwnerId == peer.Id)
             .Select(x => new NetField(networkObjectId, x.Id, x.GetValue(networkObject))).Where(x => x.Value != null!)
             .ToArray();
 

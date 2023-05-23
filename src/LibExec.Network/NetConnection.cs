@@ -21,10 +21,10 @@ public sealed class NetConnection
         return peer == null ? null : new NetConnection(peer);
     }
 
-    public void SendPacket<T>(T packet, DeliveryMethod deliveryMethod = DeliveryMethod.ReliableOrdered)
-        where T : class, new()
+    public void SendPacket<T>(T packet, DeliveryMethod deliveryMethod = DeliveryMethod.ReliableOrdered,
+        bool excludeLocalConnection = false) where T : class, new()
     {
-        Peer.SendPacket(packet, deliveryMethod);
+        Peer.SendPacket(packet, deliveryMethod, excludeLocalConnection);
     }
 
     public void Disconnect()
