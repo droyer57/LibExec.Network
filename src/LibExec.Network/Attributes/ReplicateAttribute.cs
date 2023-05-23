@@ -13,4 +13,5 @@ public sealed class ReplicateAttribute : Attribute
     }
 
     public int Condition { get; }
+    public string? OnChange { get; init; }
 }

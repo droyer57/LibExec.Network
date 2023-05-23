@@ -29,7 +29,7 @@ internal static class ReflectionExtensions
             .Where(x => x.GetCustomAttribute<T>() != null);
     }
 
-    public static Action<NetworkObject, object> CreateSetter(this FieldInfo field)
+    public static Action<NetworkObject, object> CreateSetterDelegate(this FieldInfo field)
     {
         var targetExp = Expression.Parameter(typeof(NetworkObject), "target");
         var valueExp = Expression.Parameter(typeof(object), "value");
@@ -44,7 +44,7 @@ internal static class ReflectionExtensions
         return setter;
     }
 
-    public static Func<NetworkObject, object> CreateGetter(this FieldInfo field)
+    public static Func<NetworkObject, object> CreateGetterDelegate(this FieldInfo field)
     {
         var targetExp = Expression.Parameter(typeof(NetworkObject), "target");
 
@@ -57,7 +57,7 @@ internal static class ReflectionExtensions
         return getter;
     }
 
-    public static Action<NetworkObject, object[]?> CreateMethod(this MethodInfo methodInfo)
+    public static Action<NetworkObject, object[]?> CreateDelegate(this MethodInfo methodInfo)
     {
         var instance = Expression.Parameter(typeof(NetworkObject), "instance");
         var parameters = Expression.Parameter(typeof(object[]), "parameters");
@@ -74,5 +74,21 @@ internal static class ReflectionExtensions
 
         var call = Expression.Call(instanceCast, methodInfo, parametersCasts);
         return Expression.Lambda<Action<NetworkObject, object[]?>>(call, instance, parameters).Compile();
+    }
+
+    public static Action<NetworkObject, object> CreateOnChangeDelegate(this MethodInfo methodInfo)
+    {
+        var instance = Expression.Parameter(typeof(NetworkObject), "instance");
+        var value = Expression.Parameter(typeof(object), "value");
+
+        var instanceCast = Expression.Convert(instance, methodInfo.DeclaringType!);
+
+        var parameterInfos = methodInfo.GetParameters();
+
+        var call = parameterInfos.Length == 1
+            ? Expression.Call(instanceCast, methodInfo, Expression.Convert(value, parameterInfos[0].ParameterType))
+            : Expression.Call(instanceCast, methodInfo);
+
+        return Expression.Lambda<Action<NetworkObject, object>>(call, instance, value).Compile();
     }
 }

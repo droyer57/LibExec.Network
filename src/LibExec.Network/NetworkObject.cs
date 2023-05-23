@@ -53,22 +53,20 @@ public abstract class NetworkObject
     private void UpdateField(object newValue, ushort fieldId)
     {
         var fieldInfo = NetworkManager.FieldInfos[fieldId];
-        var oldValue = fieldInfo.GetValue(this);
-        fieldInfo.SetValue(this, newValue);
+        var oldValue = fieldInfo.SetValue(this, newValue);
 
         if (!NetworkManager.IsServer || !IsValid || newValue == oldValue) return;
 
         var packet = new UpdateFieldPacket(new NetField(Id, fieldId, newValue));
-        var replicateAttribute = fieldInfo.Attribute;
+        var attribute = fieldInfo.Attribute;
 
-
-        if (replicateAttribute.Condition == OwnerOnly)
+        if (attribute.Condition == OwnerOnly)
         {
             Owner!.SendPacket(packet, excludeLocalConnection: true);
         }
         else
         {
-            var excludeConnection = replicateAttribute.Condition == SkipOwner ? Owner : null;
+            var excludeConnection = attribute.Condition == SkipOwner ? Owner : null;
             ServerManager.SendPacketToAll(packet, excludeLocalConnection: true, excludeConnection: excludeConnection);
         }
     }

@@ -9,7 +9,7 @@ internal sealed class FastMethodInfo
     public FastMethodInfo(MethodInfo methodInfo, ushort id)
     {
         Id = id;
-        _invoker = methodInfo.CreateMethod();
+        _invoker = methodInfo.CreateDelegate();
         Params = methodInfo.GetParameters().Select(x => x.ParameterType).ToArray();
     }
 
