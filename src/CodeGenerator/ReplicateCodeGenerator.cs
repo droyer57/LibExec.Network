@@ -8,11 +8,11 @@ namespace CodeGenerator;
 
 internal sealed class ReplicateCodeGenerator : CodeGenerator
 {
-    private const string SendFieldMethodName = "SendField";
+    private const string UpdateFieldMethodName = "UpdateField";
     private readonly Dictionary<FieldDefinition, ushort> _fields = new();
     private ushort _nextFieldId;
 
-    private MethodReference _sendFieldMethodRef = null!;
+    private MethodReference _updateFieldMethodRef = null!;
 
     protected override void Process()
     {
@@ -24,12 +24,13 @@ internal sealed class ReplicateCodeGenerator : CodeGenerator
             _fields.Add(field, _nextFieldId++);
         }
 
-        var sendFieldMethod = LibModule.Types.First(x => x.Name == NetworkManagerClassName).Methods
-            .First(x => x.Name == SendFieldMethodName);
-        sendFieldMethod.IsPublic = true;
-        _sendFieldMethodRef = Module.ImportReference(sendFieldMethod);
+        var updateFieldMethod = LibModule.Types.First(x => x.Name == NetworkObjectClassName).Methods
+            .First(x => x.Name == UpdateFieldMethodName);
+        updateFieldMethod.IsPublic = true;
+        _updateFieldMethodRef = Module.ImportReference(updateFieldMethod);
 
-        foreach (var method in Resource.NetworkObjectMethods)
+        var methods = Module.Types.Where(x => x.IsPublic).SelectMany(x => x.Methods).Where(x => x.HasBody);
+        foreach (var method in methods)
         {
             if (method.IsConstructor) continue;
 
@@ -51,26 +52,13 @@ internal sealed class ReplicateCodeGenerator : CodeGenerator
 
     private void Execute(FieldDefinition field, int index, ExtendedIlProcessor ilProcessor)
     {
-        // SendField(ushort id, uint networkObjectId, object oldValue, object value)
+        // UpdateField(object newValue, ushort fieldId);
 
-        var idField = field.DeclaringType.BaseType.Resolve().Properties.First(x => x.Name == "Id");
+        ilProcessor.Index = index - 1;
 
-        ilProcessor.Index = index - 2;
-
-        ilProcessor.EmitIndex(OpCodes.Ldarg_0);
-        ilProcessor.EmitIndex(OpCodes.Ldfld, field);
         ilProcessor.EmitIndex(OpCodes.Box, field.FieldType);
-        ilProcessor.EmitIndex(OpCodes.Stloc_0);
-
-        ilProcessor.Index = index + 4;
-
         ilProcessor.EmitIndex(OpCodes.Ldc_I4, _fields[field]);
-        ilProcessor.EmitIndex(OpCodes.Ldarg_0);
-        ilProcessor.EmitIndex(OpCodes.Call, Module.ImportReference(idField.GetMethod));
-        ilProcessor.EmitIndex(OpCodes.Ldloc_0);
-        ilProcessor.EmitIndex(OpCodes.Ldarg_0);
-        ilProcessor.EmitIndex(OpCodes.Ldfld, field);
-        ilProcessor.EmitIndex(OpCodes.Box, field.FieldType);
-        ilProcessor.EmitIndex(OpCodes.Call, _sendFieldMethodRef);
+        ilProcessor.EmitIndex(OpCodes.Callvirt, _updateFieldMethodRef);
+        ilProcessor.Value.RemoveAt(ilProcessor.Index + 1);
     }
 }

@@ -4,7 +4,9 @@ namespace LibExec.Network;
 
 public sealed class ServerManager : ManagerBase
 {
-    private uint _nextId;
+    private const int FirstId = 1;
+
+    private uint _nextId = FirstId;
 
     public NetConnection[] Connections { get; private set; } = null!;
 
@@ -28,7 +30,7 @@ public sealed class ServerManager : ManagerBase
 
         base.Stop();
 
-        _nextId = 0;
+        _nextId = FirstId;
         ConnectionState = ConnectionState.Stopped;
     }
 
@@ -53,9 +55,9 @@ public sealed class ServerManager : ManagerBase
 
         var instance = NetworkManager.CreateNetworkObject(Reflection.PlayerType);
         InitNetworkObject(instance, peer);
-        NetworkManager.AddNetworkObject(instance);
 
         SpawnToAll(instance);
+        NetworkManager.AddNetworkObject(instance);
     }
 
     protected override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)

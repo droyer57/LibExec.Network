@@ -93,29 +93,6 @@ public sealed class NetworkManager
         method.Invoke(instance, packet.Method.Args);
     }
 
-    internal void OnUpdateField(UpdateFieldPacket packet)
-    {
-        var instance = NetworkObjects[packet.Field.NetworkObjectId];
-        FieldInfos[packet.Field.Id].SetValue(instance, packet.Field.Value);
-    }
-
-    // ReSharper disable once UnusedMember.Global
-    internal static void SendField(ushort id, uint networkObjectId, object? oldValue, object value)
-    {
-        if (!Instance.IsServer)
-        {
-            throw new Exception("A replicated variable can only be updated by the server");
-        }
-
-        if (value == oldValue)
-        {
-            return;
-        }
-
-        var packet = new UpdateFieldPacket(new NetField(networkObjectId, id, value));
-        Instance.ServerManager.SendPacketToAll(packet, excludeLocalConnection: true);
-    }
-
     internal void InvokeNetworkEvent()
     {
         NetworkEvent?.Invoke();

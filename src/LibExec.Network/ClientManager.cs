@@ -8,7 +8,7 @@ public sealed class ClientManager : ManagerBase
     {
         RegisterPacket<SpawnNetworkObjectPacket>(OnSpawnNetworkObject);
         RegisterPacket<DestroyNetworkObjectPacket>(OnDestroyNetworkObject);
-        RegisterPacket<UpdateFieldPacket>(NetworkManager.OnUpdateField);
+        RegisterPacket<UpdateFieldPacket>(OnUpdateField);
     }
 
     public string Address { get; internal set; } = NetworkManager.LocalAddress;
@@ -79,5 +79,11 @@ public sealed class ClientManager : ManagerBase
         where T : class, new()
     {
         Connection.SendPacket(packet, deliveryMethod);
+    }
+
+    private void OnUpdateField(UpdateFieldPacket packet)
+    {
+        var instance = NetworkManager.NetworkObjects[packet.Field.NetworkObjectId];
+        NetworkManager.FieldInfos[packet.Field.Id].SetValue(instance, packet.Field.Value);
     }
 }

@@ -4,8 +4,7 @@ namespace Sandbox.Game;
 
 public sealed class Entity : NetworkObject
 {
-    [Replicate]
-    private int _value;
+    [Replicate] public int _value;
     // public int Value { get; private set; }
 
     public int Value => _value; // todo: tmp
