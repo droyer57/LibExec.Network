@@ -24,6 +24,11 @@ public sealed class NetworkManager
 
         NetworkObjectTypes = new BiDictionary<Type>(Reflection.NetworkObjectTypes);
 
+        PacketProcessor = new PacketProcessor();
+        PacketProcessor.RegisterType<NetworkObjectType>();
+        PacketProcessor.RegisterType<NetMethod>();
+        PacketProcessor.RegisterType<NetField>();
+
         ServerManager = new ServerManager();
         ClientManager = new ClientManager();
 
@@ -44,9 +49,7 @@ public sealed class NetworkManager
     internal Dictionary<ushort, FastFieldInfo> FieldInfos { get; }
     internal Dictionary<Type, IEnumerable<FastFieldInfo>> FieldInfosByType { get; }
     internal Dictionary<ushort, FastMethodInfo> Methods { get; } = new();
-
-    internal PacketProcessor PacketProcessor =>
-        IsServer ? ServerManager.PacketProcessor : ClientManager.PacketProcessor;
+    internal PacketProcessor PacketProcessor { get; }
 
     internal NetworkObject CreateNetworkObject(Type type)
     {

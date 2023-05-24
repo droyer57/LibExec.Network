@@ -46,4 +46,11 @@ internal class BiDictionary<T1, T2> where T1 : notnull where T2 : struct
         _data.Add(key, value);
         _reverseData.Add(value, key);
     }
+
+    public bool TryAdd(T2 key, T1 value)
+    {
+        var state1 = _data.TryAdd(key, value);
+        var state2 = _reverseData.TryAdd(value, key);
+        return state1 && state2;
+    }
 }

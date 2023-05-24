@@ -5,28 +5,27 @@ namespace LibExec.Network;
 public abstract class ManagerBase
 {
     private readonly EventBasedNetListener _listener = new();
+    protected readonly bool IsServer;
     protected readonly NetManager Manager;
     private ConnectionState _connectionState;
 
     protected ManagerBase()
     {
-        Manager = new NetManager(_listener);
+        Manager = new NetManager(_listener)
+        {
+            ChannelsCount = 5
+        };
         _listener.ConnectionRequestEvent += OnConnectionRequest;
         _listener.PeerConnectedEvent += OnPeerConnected;
         _listener.PeerDisconnectedEvent += OnPeerDisconnected;
         _listener.NetworkReceiveEvent += OnNetworkReceive;
+        IsServer = GetType() == typeof(ServerManager);
 
-        PacketProcessor = new PacketProcessor();
-        PacketProcessor.RegisterType<NetworkObjectType>();
-        PacketProcessor.RegisterType<NetMethod>();
-        PacketProcessor.RegisterType<NetField>();
-
-        RegisterPacket<InvokeMethodPacket>(NetworkManager.OnInvokeMethod);
+        NetworkManager.PacketProcessor.RegisterCallback<InvokeMethodPacket>(NetworkManager.OnInvokeMethod, Channel.Rpc,
+            IsServer);
     }
 
     protected static NetworkManager NetworkManager => NetworkManager.Instance;
-
-    internal PacketProcessor PacketProcessor { get; }
 
     public ConnectionState ConnectionState
     {
@@ -79,23 +78,23 @@ public abstract class ManagerBase
     protected virtual void OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channel,
         DeliveryMethod deliveryMethod)
     {
-        PacketProcessor.ReadAllPackets(reader, new NetConnection(peer));
+        NetworkManager.PacketProcessor.ReadAllPackets(reader, new NetConnection(peer), channel, IsServer);
         NetworkManager.InvokeNetworkEvent();
         reader.Recycle();
     }
 
     public void RegisterPacket<T>(Action<T> callback) where T : class, new()
     {
-        PacketProcessor.RegisterCallback(callback);
+        NetworkManager.PacketProcessor.RegisterCallback(callback, Channel.Default, IsServer);
     }
 
     public void RegisterPacket<T>(Action<T, NetConnection> callback) where T : class, new()
     {
-        PacketProcessor.RegisterCallback(callback);
+        NetworkManager.PacketProcessor.RegisterCallback(callback, Channel.Default, IsServer);
     }
 
     public bool RemovePacket<T>()
     {
-        return PacketProcessor.RemoveCallback<T>();
+        return NetworkManager.PacketProcessor.RemoveCallback<T>(IsServer);
     }
 }

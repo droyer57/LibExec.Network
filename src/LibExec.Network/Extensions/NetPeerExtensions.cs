@@ -17,8 +17,8 @@ internal static class NetPeerExtensions
         }
 
         var writer = new NetDataWriter();
-        NetworkManager.PacketProcessor.Write(writer, packet);
-        peer.Send(writer, deliveryMethod);
+        var channel = NetworkManager.PacketProcessor.Write(writer, packet);
+        peer.Send(writer, channel, deliveryMethod);
     }
 
     public static bool IsLocal(this NetPeer peer)

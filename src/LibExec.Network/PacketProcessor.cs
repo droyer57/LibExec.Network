@@ -2,21 +2,30 @@ using LiteNetLib.Utils;
 
 namespace LibExec.Network;
 
-public sealed class PacketProcessor
+internal sealed class PacketProcessor
 {
-    private readonly Dictionary<Type, RegisterDelegate> _callbacks = new();
+    private readonly Dictionary<Type, RegisterDelegate> _clientCallbacks = new();
 
     private readonly NetSerializer _netSerializer = new();
     private readonly BiDictionary<Type> _packetTypes;
+    private readonly BiDictionary<Type, byte> _packetTypesByChannel = new();
+    private readonly Dictionary<Type, RegisterDelegate> _serverCallbacks = new();
 
     public PacketProcessor()
     {
         _packetTypes = new BiDictionary<Type>(Reflection.PacketTypes);
     }
 
-    private RegisterDelegate GetCallback(NetDataReader reader)
+    private Dictionary<Type, RegisterDelegate> GetCallbacks(bool asServer)
     {
-        if (!_callbacks.TryGetValue(GetHeader(reader), out var action))
+        return asServer ? _serverCallbacks : _clientCallbacks;
+    }
+
+    private RegisterDelegate GetCallback(NetDataReader reader, byte channel, bool asServer)
+    {
+        var type = channel == 0 ? GetHeader(reader) : _packetTypesByChannel.Get(channel);
+
+        if (!GetCallbacks(asServer).TryGetValue(type, out var action))
         {
             throw new ParseException($"Undefined packet in {nameof(NetDataReader)}");
         }
@@ -34,10 +43,16 @@ public sealed class PacketProcessor
         writer.Put(_packetTypes.Get(typeof(T)));
     }
 
-    public void Write<T>(NetDataWriter writer, T packet) where T : class, new()
+    public byte Write<T>(NetDataWriter writer, T packet) where T : class, new()
     {
-        WriteHeader<T>(writer);
+        var channel = _packetTypesByChannel.Get(typeof(T));
+        if (channel == 0)
+        {
+            WriteHeader<T>(writer);
+        }
+
         _netSerializer.Serialize(writer, packet);
+        return channel;
     }
 
     public void RegisterType<T>() where T : struct, INetSerializable
@@ -50,33 +65,35 @@ public sealed class PacketProcessor
         _netSerializer.RegisterNestedType(constructor);
     }
 
-    public void ReadAllPackets(NetDataReader reader, NetConnection connection)
+    public void ReadAllPackets(NetDataReader reader, NetConnection connection, byte channel, bool asServer)
     {
         while (reader.AvailableBytes > 0)
         {
-            GetCallback(reader).Invoke(reader, connection);
+            GetCallback(reader, channel, asServer).Invoke(reader, connection);
         }
     }
 
-    public void RegisterCallback<T>(Action<T> onReceive) where T : class, new()
+    public void RegisterCallback<T>(Action<T> onReceive, Channel channel, bool asServer) where T : class, new()
     {
-        RegisterCallback<T>((packet, _) => onReceive(packet));
+        RegisterCallback<T>((packet, _) => onReceive(packet), channel, asServer);
     }
 
-    public void RegisterCallback<T>(Action<T, NetConnection> onReceive) where T : class, new()
+    public void RegisterCallback<T>(Action<T, NetConnection> onReceive, Channel channel, bool asServer)
+        where T : class, new()
     {
         _netSerializer.Register<T>();
         var packet = new T();
-        _callbacks[typeof(T)] = (reader, connection) =>
+        _packetTypesByChannel.TryAdd((byte)channel, typeof(T));
+        GetCallbacks(asServer)[typeof(T)] = (reader, connection) =>
         {
             _netSerializer.Deserialize(reader, packet);
             onReceive(packet, connection);
         };
     }
 
-    public bool RemoveCallback<T>()
+    public bool RemoveCallback<T>(bool asServer)
     {
-        return _callbacks.Remove(typeof(T));
+        return GetCallbacks(asServer).Remove(typeof(T));
     }
 
     private delegate void RegisterDelegate(NetDataReader reader, NetConnection connection);

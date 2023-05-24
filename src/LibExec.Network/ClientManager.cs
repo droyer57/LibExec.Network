@@ -6,9 +6,11 @@ public sealed class ClientManager : ManagerBase
 {
     public ClientManager()
     {
-        RegisterPacket<SpawnNetworkObjectPacket>(OnSpawnNetworkObject);
-        RegisterPacket<DestroyNetworkObjectPacket>(OnDestroyNetworkObject);
-        RegisterPacket<UpdateFieldPacket>(OnUpdateField);
+        NetworkManager.PacketProcessor.RegisterCallback<SpawnNetworkObjectPacket>(OnSpawnNetworkObject,
+            Channel.Spawn, IsServer);
+        NetworkManager.PacketProcessor.RegisterCallback<DestroyNetworkObjectPacket>(OnDestroyNetworkObject,
+            Channel.Destroy, IsServer);
+        NetworkManager.PacketProcessor.RegisterCallback<UpdateFieldPacket>(OnUpdateField, Channel.Replicate, IsServer);
     }
 
     public string Address { get; internal set; } = NetworkManager.LocalAddress;
