@@ -28,6 +28,7 @@ public sealed class NetworkManager
         PacketProcessor.RegisterType<NetworkObjectType>();
         PacketProcessor.RegisterType<NetMethod>();
         PacketProcessor.RegisterType<NetField>();
+        PacketProcessor.RegisterType<NetProperty>();
 
         ServerManager = new ServerManager();
         ClientManager = new ClientManager();
@@ -40,6 +41,12 @@ public sealed class NetworkManager
         FieldInfos = Reflection.ReplicateFieldInfos.ToDictionary(_ => nextId, x => new FastFieldInfo(x, nextId++));
         FieldInfosByType = FieldInfos.Values.GroupBy(x => x.DeclaringType)
             .ToDictionary(x => x.Key, x => x.AsEnumerable());
+
+        nextId = 0;
+        PropertyInfos =
+            Reflection.ReplicatePropertyInfos.ToDictionary(_ => nextId, x => new FastPropertyInfo(x, nextId++));
+        PropertyInfosByType = PropertyInfos.Values.GroupBy(x => x.DeclaringType)
+            .ToDictionary(x => x.Key, x => x.AsEnumerable());
     }
 
     #region Internal
@@ -47,7 +54,9 @@ public sealed class NetworkManager
     internal Dictionary<uint, NetworkObject> NetworkObjects { get; } = new();
     internal BiDictionary<Type> NetworkObjectTypes { get; }
     internal Dictionary<ushort, FastFieldInfo> FieldInfos { get; }
+    internal Dictionary<ushort, FastPropertyInfo> PropertyInfos { get; }
     internal Dictionary<Type, IEnumerable<FastFieldInfo>> FieldInfosByType { get; }
+    internal Dictionary<Type, IEnumerable<FastPropertyInfo>> PropertyInfosByType { get; }
     internal Dictionary<ushort, FastMethodInfo> Methods { get; } = new();
     internal PacketProcessor PacketProcessor { get; }
 

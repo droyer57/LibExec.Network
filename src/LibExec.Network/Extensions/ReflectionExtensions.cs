@@ -29,6 +29,13 @@ internal static class ReflectionExtensions
             .Where(x => x.GetCustomAttribute<T>() != null);
     }
 
+    public static IEnumerable<PropertyInfo> GetPropertiesByAttribute<T>(this Type type)
+        where T : Attribute
+    {
+        return type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            .Where(x => x.GetCustomAttribute<T>() != null);
+    }
+
     public static Action<NetworkObject, object> CreateSetterDelegate(this FieldInfo field)
     {
         var targetExp = Expression.Parameter(typeof(NetworkObject), "target");
@@ -90,5 +97,33 @@ internal static class ReflectionExtensions
             : Expression.Call(instanceCast, methodInfo);
 
         return Expression.Lambda<Action<NetworkObject, object>>(call, instance, value).Compile();
+    }
+
+    public static Action<NetworkObject, object> CreateSetterDelegate(this PropertyInfo property)
+    {
+        var targetExp = Expression.Parameter(typeof(NetworkObject), "target");
+        var valueExp = Expression.Parameter(typeof(object), "value");
+
+        var targetCast = Expression.Convert(targetExp, property.DeclaringType!);
+        var valueCast = Expression.Convert(valueExp, property.PropertyType);
+
+        var fieldExp = Expression.Property(targetCast, property);
+        var assignExp = Expression.Assign(fieldExp, valueCast);
+
+        var setter = Expression.Lambda<Action<NetworkObject, object>>(assignExp, targetExp, valueExp).Compile();
+        return setter;
+    }
+
+    public static Func<NetworkObject, object> CreateGetterDelegate(this PropertyInfo property)
+    {
+        var targetExp = Expression.Parameter(typeof(NetworkObject), "target");
+
+        var targetCast = Expression.Convert(targetExp, property.DeclaringType!);
+
+        var fieldExp = Expression.Property(targetCast, property);
+        var convertExp = Expression.Convert(fieldExp, typeof(object));
+
+        var getter = Expression.Lambda<Func<NetworkObject, object>>(convertExp, targetExp).Compile();
+        return getter;
     }
 }

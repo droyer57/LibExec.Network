@@ -35,6 +35,9 @@ internal sealed class Reflection
         ReplicateFieldInfos =
             NetworkObjectTypes.SelectMany(x => x.GetFieldsByAttribute<ReplicateAttribute>()).ToArray();
 
+        ReplicatePropertyInfos =
+            NetworkObjectTypes.SelectMany(x => x.GetPropertiesByAttribute<ReplicateAttribute>()).ToArray();
+
         Activator.CreateInstance(typeof(InternalNetworkInit), true);
         var networkInitClassType = entryAssembly.GetTypes().First(x => x.Name == NetworkInitClassName);
         Activator.CreateInstance(networkInitClassType, true);
@@ -47,4 +50,5 @@ internal sealed class Reflection
     public static MethodInfo[] MulticastMethodInfos { get; private set; } = null!;
     public static MethodInfo[] ClientMethodInfos { get; private set; } = null!;
     public static FieldInfo[] ReplicateFieldInfos { get; private set; } = null!;
+    public static PropertyInfo[] ReplicatePropertyInfos { get; private set; } = null!;
 }

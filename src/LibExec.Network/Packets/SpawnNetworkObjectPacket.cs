@@ -7,4 +7,5 @@ internal sealed class SpawnNetworkObjectPacket
     public int OwnerId { get; init; }
     public NetworkObjectType Type { get; init; } = null!;
     public NetField[] Fields { get; init; } = null!;
+    public NetProperty[] Properties { get; init; } = null!;
 }

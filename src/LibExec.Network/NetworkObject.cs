@@ -70,4 +70,26 @@ public abstract class NetworkObject
             ServerManager.SendPacketToAll(packet, excludeLocalConnection: true, excludeConnection: excludeConnection);
         }
     }
+
+    // ReSharper disable once UnusedMember.Local
+    private void UpdateProperty(object newValue, ushort propertyId)
+    {
+        var propertyInfo = NetworkManager.PropertyInfos[propertyId];
+        var oldValue = propertyInfo.SetValue(this, newValue);
+
+        if (!NetworkManager.IsServer || !IsValid || newValue == oldValue) return;
+
+        var packet = new UpdatePropertyPacket(new NetProperty(Id, propertyId, newValue));
+        var attribute = propertyInfo.Attribute;
+
+        if (attribute.Condition == OwnerOnly)
+        {
+            Owner!.SendPacket(packet, excludeLocalConnection: true);
+        }
+        else
+        {
+            var excludeConnection = attribute.Condition == SkipOwner ? Owner : null;
+            ServerManager.SendPacketToAll(packet, excludeLocalConnection: true, excludeConnection: excludeConnection);
+        }
+    }
 }

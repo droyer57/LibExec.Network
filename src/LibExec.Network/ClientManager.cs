@@ -10,7 +10,10 @@ public sealed class ClientManager : ManagerBase
             Channel.Spawn, IsServer);
         NetworkManager.PacketProcessor.RegisterCallback<DestroyNetworkObjectPacket>(OnDestroyNetworkObject,
             Channel.Destroy, IsServer);
-        NetworkManager.PacketProcessor.RegisterCallback<UpdateFieldPacket>(OnUpdateField, Channel.Replicate, IsServer);
+        NetworkManager.PacketProcessor.RegisterCallback<UpdateFieldPacket>(OnUpdateField, Channel.ReplicateField,
+            IsServer);
+        NetworkManager.PacketProcessor.RegisterCallback<UpdatePropertyPacket>(OnUpdateProperty,
+            Channel.ReplicateProperty, IsServer);
     }
 
     public string Address { get; internal set; } = NetworkManager.LocalAddress;
@@ -58,6 +61,11 @@ public sealed class ClientManager : ManagerBase
             NetworkManager.FieldInfos[field.Id].SetValue(instance, field.Value);
         }
 
+        foreach (var property in packet.Properties)
+        {
+            NetworkManager.PropertyInfos[property.Id].SetValue(instance, property.Value);
+        }
+
         NetworkManager.AddNetworkObject(instance);
     }
 
@@ -83,9 +91,15 @@ public sealed class ClientManager : ManagerBase
         Connection.SendPacket(packet, deliveryMethod);
     }
 
-    private void OnUpdateField(UpdateFieldPacket packet)
+    private static void OnUpdateField(UpdateFieldPacket packet)
     {
         var instance = NetworkManager.NetworkObjects[packet.Field.NetworkObjectId];
         NetworkManager.FieldInfos[packet.Field.Id].SetValue(instance, packet.Field.Value);
+    }
+
+    private static void OnUpdateProperty(UpdatePropertyPacket packet)
+    {
+        var instance = NetworkManager.NetworkObjects[packet.Property.NetworkObjectId];
+        NetworkManager.PropertyInfos[packet.Property.Id].SetValue(instance, packet.Property.Value);
     }
 }
