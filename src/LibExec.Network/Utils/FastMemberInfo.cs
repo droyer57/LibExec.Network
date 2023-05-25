@@ -2,22 +2,22 @@ using System.Reflection;
 
 namespace LibExec.Network;
 
-internal class FastPropertyInfo
+internal sealed class FastMemberInfo
 {
     private readonly Func<NetworkObject, object> _getter;
     private readonly Action<NetworkObject, object>? _onChange;
     private readonly Action<NetworkObject, object> _setter;
 
-    public FastPropertyInfo(PropertyInfo propertyInfo, ushort id)
+    public FastMemberInfo(MemberInfo memberInfo, ushort id)
     {
         Id = id;
-        _setter = propertyInfo.CreateSetterDelegate();
-        _getter = propertyInfo.CreateGetterDelegate();
+        _setter = memberInfo.CreateSetterDelegate();
+        _getter = memberInfo.CreateGetterDelegate();
 
-        Type = propertyInfo.PropertyType;
-        DeclaringType = propertyInfo.DeclaringType ??
-                        throw new ArgumentNullException(nameof(propertyInfo.DeclaringType));
-        Attribute = propertyInfo.GetCustomAttribute<ReplicateAttribute>()!;
+        Type = memberInfo is FieldInfo field ? field.FieldType : ((PropertyInfo)memberInfo).PropertyType;
+        DeclaringType = memberInfo.DeclaringType ??
+                        throw new ArgumentNullException(nameof(memberInfo.DeclaringType));
+        Attribute = memberInfo.GetCustomAttribute<ReplicateAttribute>()!;
 
         if (Attribute.OnChange != null)
         {
@@ -44,14 +44,9 @@ internal class FastPropertyInfo
         if (value != oldValue)
         {
             _setter.Invoke(instance, value);
-            InvokeOnChange(instance, oldValue);
+            _onChange?.Invoke(instance, oldValue);
         }
 
         return oldValue;
-    }
-
-    public void InvokeOnChange(NetworkObject instance, object oldValue)
-    {
-        _onChange?.Invoke(instance, oldValue);
     }
 }

@@ -12,7 +12,7 @@
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="Build">
-        <Exec Command="$(MSBuildThisFileDirectory)../CodeGenerator/bin/$(Configuration)/net6.0/CodeGenerator $(TargetPath)"/>
+        <Exec Command="$(MSBuildThisFileDirectory)../CodeGenerator/bin/Release/net6.0/CodeGenerator $(TargetPath)"/>
     </Target>
 
 </Project>

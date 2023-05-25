@@ -60,15 +60,7 @@ public abstract class NetworkObject
         var packet = new UpdateFieldPacket(new NetField(Id, fieldId, newValue));
         var attribute = fieldInfo.Attribute;
 
-        if (attribute.Condition == OwnerOnly)
-        {
-            Owner!.SendPacket(packet, excludeLocalConnection: true);
-        }
-        else
-        {
-            var excludeConnection = attribute.Condition == SkipOwner ? Owner : null;
-            ServerManager.SendPacketToAll(packet, excludeLocalConnection: true, excludeConnection: excludeConnection);
-        }
+        SendMemberInfo(packet, attribute);
     }
 
     // ReSharper disable once UnusedMember.Local
@@ -82,6 +74,11 @@ public abstract class NetworkObject
         var packet = new UpdatePropertyPacket(new NetProperty(Id, propertyId, newValue));
         var attribute = propertyInfo.Attribute;
 
+        SendMemberInfo(packet, attribute);
+    }
+
+    private void SendMemberInfo<T>(T packet, ReplicateAttribute attribute) where T : class, new()
+    {
         if (attribute.Condition == OwnerOnly)
         {
             Owner!.SendPacket(packet, excludeLocalConnection: true);

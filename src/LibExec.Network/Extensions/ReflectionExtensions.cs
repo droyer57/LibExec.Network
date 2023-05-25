@@ -36,34 +36,6 @@ internal static class ReflectionExtensions
             .Where(x => x.GetCustomAttribute<T>() != null);
     }
 
-    public static Action<NetworkObject, object> CreateSetterDelegate(this FieldInfo field)
-    {
-        var targetExp = Expression.Parameter(typeof(NetworkObject), "target");
-        var valueExp = Expression.Parameter(typeof(object), "value");
-
-        var targetCast = Expression.Convert(targetExp, field.DeclaringType!);
-        var valueCast = Expression.Convert(valueExp, field.FieldType);
-
-        var fieldExp = Expression.Field(targetCast, field);
-        var assignExp = Expression.Assign(fieldExp, valueCast);
-
-        var setter = Expression.Lambda<Action<NetworkObject, object>>(assignExp, targetExp, valueExp).Compile();
-        return setter;
-    }
-
-    public static Func<NetworkObject, object> CreateGetterDelegate(this FieldInfo field)
-    {
-        var targetExp = Expression.Parameter(typeof(NetworkObject), "target");
-
-        var targetCast = Expression.Convert(targetExp, field.DeclaringType!);
-
-        var fieldExp = Expression.Field(targetCast, field);
-        var convertExp = Expression.Convert(fieldExp, typeof(object));
-
-        var getter = Expression.Lambda<Func<NetworkObject, object>>(convertExp, targetExp).Compile();
-        return getter;
-    }
-
     public static Action<NetworkObject, object[]?> CreateDelegate(this MethodInfo methodInfo)
     {
         var instance = Expression.Parameter(typeof(NetworkObject), "instance");
@@ -99,31 +71,49 @@ internal static class ReflectionExtensions
         return Expression.Lambda<Action<NetworkObject, object>>(call, instance, value).Compile();
     }
 
-    public static Action<NetworkObject, object> CreateSetterDelegate(this PropertyInfo property)
+
+    public static Action<NetworkObject, object> CreateSetterDelegate(this MemberInfo memberInfo)
     {
         var targetExp = Expression.Parameter(typeof(NetworkObject), "target");
         var valueExp = Expression.Parameter(typeof(object), "value");
 
-        var targetCast = Expression.Convert(targetExp, property.DeclaringType!);
-        var valueCast = Expression.Convert(valueExp, property.PropertyType);
+        var targetCast = Expression.Convert(targetExp, memberInfo.DeclaringType!);
 
-        var fieldExp = Expression.Property(targetCast, property);
-        var assignExp = Expression.Assign(fieldExp, valueCast);
+        Expression exp = null!;
+        Type memberType = null!;
+        switch (memberInfo)
+        {
+            case PropertyInfo property:
+                memberType = property.PropertyType;
+                exp = Expression.Property(targetCast, property);
+                break;
+            case FieldInfo field:
+                memberType = field.FieldType;
+                exp = Expression.Field(targetCast, field);
+                break;
+        }
+
+        var valueCast = Expression.Convert(valueExp, memberType);
+        var assignExp = Expression.Assign(exp, valueCast);
 
         var setter = Expression.Lambda<Action<NetworkObject, object>>(assignExp, targetExp, valueExp).Compile();
         return setter;
     }
 
-    public static Func<NetworkObject, object> CreateGetterDelegate(this PropertyInfo property)
+    public static Func<NetworkObject, object> CreateGetterDelegate(this MemberInfo memberInfo)
     {
         var targetExp = Expression.Parameter(typeof(NetworkObject), "target");
+        var targetCast = Expression.Convert(targetExp, memberInfo.DeclaringType!);
 
-        var targetCast = Expression.Convert(targetExp, property.DeclaringType!);
+        Expression exp = memberInfo switch
+        {
+            PropertyInfo property => Expression.Property(targetCast, property),
+            FieldInfo field => Expression.Field(targetCast, field),
+            _ => null!
+        };
 
-        var fieldExp = Expression.Property(targetCast, property);
-        var convertExp = Expression.Convert(fieldExp, typeof(object));
-
-        var getter = Expression.Lambda<Func<NetworkObject, object>>(convertExp, targetExp).Compile();
+        var castExp = Expression.Convert(exp, typeof(object));
+        var getter = Expression.Lambda<Func<NetworkObject, object>>(castExp, targetExp).Compile();
         return getter;
     }
 }

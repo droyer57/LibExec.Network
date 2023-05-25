@@ -38,13 +38,13 @@ public sealed class NetworkManager
         AddMethods(Reflection.MulticastMethodInfos);
 
         ushort nextId = 0;
-        FieldInfos = Reflection.ReplicateFieldInfos.ToDictionary(_ => nextId, x => new FastFieldInfo(x, nextId++));
+        FieldInfos = Reflection.ReplicateFieldInfos.ToDictionary(_ => nextId, x => new FastMemberInfo(x, nextId++));
         FieldInfosByType = FieldInfos.Values.GroupBy(x => x.DeclaringType)
             .ToDictionary(x => x.Key, x => x.AsEnumerable());
 
         nextId = 0;
         PropertyInfos =
-            Reflection.ReplicatePropertyInfos.ToDictionary(_ => nextId, x => new FastPropertyInfo(x, nextId++));
+            Reflection.ReplicatePropertyInfos.ToDictionary(_ => nextId, x => new FastMemberInfo(x, nextId++));
         PropertyInfosByType = PropertyInfos.Values.GroupBy(x => x.DeclaringType)
             .ToDictionary(x => x.Key, x => x.AsEnumerable());
     }
@@ -53,10 +53,10 @@ public sealed class NetworkManager
 
     internal Dictionary<uint, NetworkObject> NetworkObjects { get; } = new();
     internal BiDictionary<Type> NetworkObjectTypes { get; }
-    internal Dictionary<ushort, FastFieldInfo> FieldInfos { get; }
-    internal Dictionary<ushort, FastPropertyInfo> PropertyInfos { get; }
-    internal Dictionary<Type, IEnumerable<FastFieldInfo>> FieldInfosByType { get; }
-    internal Dictionary<Type, IEnumerable<FastPropertyInfo>> PropertyInfosByType { get; }
+    internal Dictionary<ushort, FastMemberInfo> FieldInfos { get; }
+    internal Dictionary<ushort, FastMemberInfo> PropertyInfos { get; }
+    internal Dictionary<Type, IEnumerable<FastMemberInfo>> FieldInfosByType { get; }
+    internal Dictionary<Type, IEnumerable<FastMemberInfo>> PropertyInfosByType { get; }
     internal Dictionary<ushort, FastMethodInfo> Methods { get; } = new();
     internal PacketProcessor PacketProcessor { get; }
 
