@@ -9,7 +9,7 @@ internal sealed class Generator
     private const string LibName = "LibExec.Network.dll";
 
     private readonly List<ModuleDefinition> _modules = new();
-    private readonly List<CodeGenerator> _processors = new();
+    private readonly List<Generators.CodeGenerator> _processors = new();
     private readonly Resource _resource;
 
     public Generator(string fileName)
@@ -48,7 +48,7 @@ internal sealed class Generator
         }
     }
 
-    public void AddCodeGenerator<T>() where T : CodeGenerator, new()
+    public void AddCodeGenerator<T>() where T : Generators.CodeGenerator, new()
     {
         _processors.Add(new T());
     }

@@ -4,7 +4,7 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using static CodeGenerator.Constants;
 
-namespace CodeGenerator;
+namespace CodeGenerator.Generators;
 
 internal sealed class ReplicateCodeGenerator : CodeGenerator
 {

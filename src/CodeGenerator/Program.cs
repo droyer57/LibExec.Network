@@ -1,4 +1,5 @@
 ﻿using System;
+using CodeGenerator.Generators;
 
 namespace CodeGenerator;
 
@@ -13,6 +14,7 @@ internal static class Program
         }
 
         var generator = new Generator(args[0]);
+        generator.AddCodeGenerator<InitCodeGenerator>();
         generator.AddCodeGenerator<RpcCodeGenerator>();
         generator.AddCodeGenerator<ReplicateCodeGenerator>();
         generator.Start();

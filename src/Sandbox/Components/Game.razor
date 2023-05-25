@@ -128,8 +128,7 @@
 
     private void AddObject()
     {
-        var entity = new Entity();
-        entity.Value = new Random().Next(10) + 1;
+        var entity = new Entity(new Random().Next(10) + 1);
         entity.Spawn();
     }
 

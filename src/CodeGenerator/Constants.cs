@@ -11,4 +11,5 @@ internal static class Constants
     public const string MulticastPatchName = "MulticastPatch";
     public const string NetworkObjectClassName = "NetworkObject";
     public const string NetworkManagerClassName = "NetworkManager";
+    public const string ConstructorName = ".ctor";
 }

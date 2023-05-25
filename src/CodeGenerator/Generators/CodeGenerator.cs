@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Mono.Cecil;
 
-namespace CodeGenerator;
+namespace CodeGenerator.Generators;
 
 internal abstract class CodeGenerator
 {

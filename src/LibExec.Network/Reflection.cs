@@ -4,7 +4,6 @@ namespace LibExec.Network;
 
 internal sealed class Reflection
 {
-    private const string NetworkInitClassName = "InternalNetworkInit";
     private static Reflection _instance = null!;
 
     public Reflection()
@@ -37,10 +36,6 @@ internal sealed class Reflection
 
         ReplicatePropertyInfos =
             NetworkObjectTypes.SelectMany(x => x.GetPropertiesByAttribute<ReplicateAttribute>()).ToArray();
-
-        Activator.CreateInstance(typeof(InternalNetworkInit), true);
-        var networkInitClassType = entryAssembly.GetTypes().First(x => x.Name == NetworkInitClassName);
-        Activator.CreateInstance(networkInitClassType, true);
     }
 
     public static Type[] NetworkObjectTypes { get; private set; } = null!;

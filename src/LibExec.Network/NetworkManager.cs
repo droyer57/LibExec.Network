@@ -164,11 +164,6 @@ public sealed class NetworkManager
         return NetworkObjects.Values.OrderBy(x => x.Id).OfType<T>();
     }
 
-    public void RegisterNetworkObject<T>() where T : NetworkObject, new()
-    {
-        _networkObjectsCache.Add(typeof(T), () => new T());
-    }
-
     public void RegisterPacket<T>(Action<T> serverCallback, Action<T> clientCallback) where T : class, new()
     {
         ServerManager.RegisterPacket(serverCallback);
@@ -254,6 +249,12 @@ public sealed class NetworkManager
         {
             Methods.Add(_nextMethodId, new FastMethodInfo(method, _nextMethodId++));
         }
+    }
+
+    // ReSharper disable once UnusedMember.Local
+    private void RegisterNetworkObject<T>() where T : NetworkObject, new()
+    {
+        _networkObjectsCache.Add(typeof(T), () => new T());
     }
 
     #endregion

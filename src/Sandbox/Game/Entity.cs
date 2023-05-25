@@ -4,7 +4,12 @@ namespace Sandbox.Game;
 
 public sealed class Entity : NetworkObject
 {
-    [Replicate] public int Value { get; set; }
+    public Entity(int value)
+    {
+        Value = value;
+    }
+
+    [Replicate] public int Value { get; private set; }
 
     [Server]
     public void SetValueServer()

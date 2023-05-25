@@ -17,11 +17,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\LibExec.Network.SourceGenerators\LibExec.Network.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
-        <None Include="..\LibExec.Network.SourceGenerators\bin\$(Configuration)\netstandard2.0\LibExec.Network.SourceGenerators.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false"/>
-    </ItemGroup>
-
-    <ItemGroup>
         <None Remove="LibExec.Network.csproj.DotSettings"/>
     </ItemGroup>
 
