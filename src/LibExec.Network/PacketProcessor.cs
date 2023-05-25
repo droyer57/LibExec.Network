@@ -10,6 +10,7 @@ internal sealed class PacketProcessor
     private readonly BiDictionary<Type> _packetTypes;
     private readonly BiDictionary<Type, byte> _packetTypesByChannel = new();
     private readonly Dictionary<Type, RegisterDelegate> _serverCallbacks = new();
+    private readonly NetDataWriter _writer = new();
 
     public PacketProcessor()
     {
@@ -38,21 +39,22 @@ internal sealed class PacketProcessor
         return _packetTypes.Get(reader.GetUShort());
     }
 
-    private void WriteHeader<T>(NetDataWriter writer)
+    private void WriteHeader<T>()
     {
-        writer.Put(_packetTypes.Get(typeof(T)));
+        _writer.Put(_packetTypes.Get(typeof(T)));
     }
 
-    public byte Write<T>(NetDataWriter writer, T packet) where T : class, new()
+    public NetDataWriter Write<T>(T packet, out byte channel) where T : class, new()
     {
-        var channel = _packetTypesByChannel.Get(typeof(T));
+        _writer.Reset();
+        channel = _packetTypesByChannel.Get(typeof(T));
         if (channel == 0)
         {
-            WriteHeader<T>(writer);
+            WriteHeader<T>();
         }
 
-        _netSerializer.Serialize(writer, packet);
-        return channel;
+        _netSerializer.Serialize(_writer, packet);
+        return _writer;
     }
 
     public void RegisterType<T>() where T : struct, INetSerializable

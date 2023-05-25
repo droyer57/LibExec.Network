@@ -1,5 +1,4 @@
 using LiteNetLib;
-using LiteNetLib.Utils;
 
 namespace LibExec.Network;
 
@@ -16,8 +15,7 @@ internal static class NetPeerExtensions
             return;
         }
 
-        var writer = new NetDataWriter();
-        var channel = NetworkManager.PacketProcessor.Write(writer, packet);
+        var writer = NetworkManager.PacketProcessor.Write(packet, out var channel);
         peer.Send(writer, channel, deliveryMethod);
     }
 
