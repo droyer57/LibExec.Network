@@ -8,16 +8,13 @@ namespace CodeGenerator;
 
 internal sealed class ReplicateCodeGenerator : CodeGenerator
 {
-    private const string UpdateFieldMethodName = "UpdateField";
-    private const string UpdatePropertyMethodName = "UpdateProperty";
-    private readonly Dictionary<FieldDefinition, ushort> _fieldsId = new();
-    private readonly Dictionary<PropertyDefinition, ushort> _propertiesId = new();
+    private const string UpdateMemberMethodName = "UpdateMember";
+    private readonly Dictionary<MemberReference, ushort> _membersId = new();
     private HashSet<FieldDefinition> _fields = null!;
     private ushort _nextId;
     private Dictionary<MethodDefinition, PropertyDefinition> _propertiesMethods = null!;
 
-    private MethodReference _updateFieldMethodRef = null!;
-    private MethodReference _updatePropertyMethodRef = null!;
+    private MethodReference _updateMemberMethodRef = null!;
 
     protected override void Process()
     {
@@ -38,13 +35,13 @@ internal sealed class ReplicateCodeGenerator : CodeGenerator
                 if (instruction.Operand is FieldDefinition field && _fields.Contains(field) &&
                     instruction.OpCode == OpCodes.Stfld)
                 {
-                    Execute(field.FieldType, ilProcessor, _fieldsId[field], _updateFieldMethodRef);
+                    Execute(field, field.FieldType, ilProcessor);
                     break;
                 }
 
                 if (instruction.Operand is MethodDefinition item && _propertiesMethods.TryGetValue(item, out var prop))
                 {
-                    Execute(prop.PropertyType, ilProcessor, _propertiesId[prop], _updatePropertyMethodRef);
+                    Execute(prop, prop.PropertyType, ilProcessor);
                     break;
                 }
             }
@@ -56,39 +53,33 @@ internal sealed class ReplicateCodeGenerator : CodeGenerator
         _fields = Resource.NetworkObjectTypes.SelectMany(x => x.Fields).Where(x =>
             x.CustomAttributes.Any(a => a.AttributeType.Name == ReplicateAttributeName)).ToHashSet();
 
-        foreach (var field in _fields)
-        {
-            _fieldsId.Add(field, _nextId++);
-        }
-
         var properties = Resource.NetworkObjectTypes.SelectMany(x => x.Properties).Where(x =>
             x.CustomAttributes.Any(a => a.AttributeType.Name == ReplicateAttributeName)).ToArray();
         _propertiesMethods = properties.ToDictionary(x => x.SetMethod, x => x);
 
-        _nextId = 0;
-        foreach (var property in properties)
+        foreach (var field in _fields)
         {
-            _propertiesId.Add(property, _nextId++);
+            _membersId.Add(field, _nextId++);
         }
 
-        var updateFieldMethod = LibModule.Types.First(x => x.Name == NetworkObjectClassName).Methods
-            .First(x => x.Name == UpdateFieldMethodName);
-        updateFieldMethod.IsPublic = true;
-        _updateFieldMethodRef = Module.ImportReference(updateFieldMethod);
+        foreach (var property in properties)
+        {
+            _membersId.Add(property, _nextId++);
+        }
 
-        var updatePropertyMethod = LibModule.Types.First(x => x.Name == NetworkObjectClassName).Methods
-            .First(x => x.Name == UpdatePropertyMethodName);
-        updatePropertyMethod.IsPublic = true;
-        _updatePropertyMethodRef = Module.ImportReference(updatePropertyMethod);
+        var updateMemberMethod = LibModule.Types.First(x => x.Name == NetworkObjectClassName).Methods
+            .First(x => x.Name == UpdateMemberMethodName);
+        updateMemberMethod.IsPublic = true;
+        _updateMemberMethodRef = Module.ImportReference(updateMemberMethod);
     }
 
-    private void Execute(TypeReference type, ExtendedIlProcessor ilProcessor, ushort id, MethodReference methodRef)
+    private void Execute(MemberReference member, TypeReference type, ExtendedIlProcessor ilProcessor)
     {
-        // UpdateField(object newValue, ushort id);
+        // UpdateMember(object newValue, ushort id);
 
         ilProcessor.EmitIndex(OpCodes.Box, type);
-        ilProcessor.EmitIndex(OpCodes.Ldc_I4, id);
-        ilProcessor.EmitIndex(OpCodes.Callvirt, methodRef);
+        ilProcessor.EmitIndex(OpCodes.Ldc_I4, _membersId[member]);
+        ilProcessor.EmitIndex(OpCodes.Callvirt, _updateMemberMethodRef);
         ilProcessor.Value.RemoveAt(ilProcessor.Index + 1);
     }
 }

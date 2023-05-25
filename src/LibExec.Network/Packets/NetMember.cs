@@ -2,11 +2,11 @@ using LiteNetLib.Utils;
 
 namespace LibExec.Network;
 
-public struct NetField : INetSerializable
+public struct NetMember : INetSerializable
 {
     private static NetworkManager NetworkManager => NetworkManager.Instance;
 
-    public NetField(uint networkObjectId, ushort id, object value)
+    public NetMember(uint networkObjectId, ushort id, object value)
     {
         NetworkObjectId = networkObjectId;
         Id = id;
@@ -22,7 +22,7 @@ public struct NetField : INetSerializable
         writer.Put(NetworkObjectId);
         writer.Put(Id);
 
-        var type = NetworkManager.FieldInfos[Id].Type;
+        var type = NetworkManager.MemberInfos[Id].Type;
         writer.Put(type, Value);
     }
 
@@ -31,7 +31,7 @@ public struct NetField : INetSerializable
         NetworkObjectId = reader.GetUInt();
         Id = reader.GetUShort();
 
-        var type = NetworkManager.FieldInfos[Id].Type;
+        var type = NetworkManager.MemberInfos[Id].Type;
         Value = reader.Get(type);
     }
 }

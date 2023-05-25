@@ -50,35 +50,16 @@ public abstract class NetworkObject
     }
 
     // ReSharper disable once UnusedMember.Local
-    private void UpdateField(object newValue, ushort fieldId)
+    private void UpdateMember(object newValue, ushort memberId)
     {
-        var fieldInfo = NetworkManager.FieldInfos[fieldId];
-        var oldValue = fieldInfo.SetValue(this, newValue);
+        var memberInfo = NetworkManager.MemberInfos[memberId];
+        var oldValue = memberInfo.SetValue(this, newValue);
 
         if (!NetworkManager.IsServer || !IsValid || newValue == oldValue) return;
 
-        var packet = new UpdateFieldPacket(new NetField(Id, fieldId, newValue));
-        var attribute = fieldInfo.Attribute;
+        var packet = new UpdateMemberPacket(new NetMember(Id, memberId, newValue));
+        var attribute = memberInfo.Attribute;
 
-        SendMemberInfo(packet, attribute);
-    }
-
-    // ReSharper disable once UnusedMember.Local
-    private void UpdateProperty(object newValue, ushort propertyId)
-    {
-        var propertyInfo = NetworkManager.PropertyInfos[propertyId];
-        var oldValue = propertyInfo.SetValue(this, newValue);
-
-        if (!NetworkManager.IsServer || !IsValid || newValue == oldValue) return;
-
-        var packet = new UpdatePropertyPacket(new NetProperty(Id, propertyId, newValue));
-        var attribute = propertyInfo.Attribute;
-
-        SendMemberInfo(packet, attribute);
-    }
-
-    private void SendMemberInfo<T>(T packet, ReplicateAttribute attribute) where T : class, new()
-    {
         if (attribute.Condition == OwnerOnly)
         {
             Owner!.SendPacket(packet, excludeLocalConnection: true);

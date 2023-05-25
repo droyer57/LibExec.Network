@@ -84,25 +84,17 @@ public sealed class ServerManager : ManagerBase
         var networkObjectType = networkObject.GetType();
         var networkObjectId = networkObject.Id;
 
-        var fields = NetworkManager.FieldInfosByType.GetValueOrDefault(networkObjectType)?.Where(x =>
+        var members = NetworkManager.MemberInfosByType.GetValueOrDefault(networkObjectType)?.Where(x =>
                 x.Attribute.Condition != NetworkObject.OwnerOnly || networkObject.OwnerId == peer.Id)
-            .Select(x => new NetField(networkObjectId, x.Id, x.GetValue(networkObject)))
-            .Where(x => x.Value != null!)
-            .ToArray();
-
-        var properties = NetworkManager.PropertyInfosByType.GetValueOrDefault(networkObjectType)?.Where(x =>
-                x.Attribute.Condition != NetworkObject.OwnerOnly || networkObject.OwnerId == peer.Id)
-            .Select(x => new NetProperty(networkObjectId, x.Id, x.GetValue(networkObject)))
-            .Where(x => x.Value != null!)
-            .ToArray();
+            .Select(x => new NetMember(networkObjectId, x.Id, x.GetValue(networkObject)))
+            .Where(x => x.Value != null!).ToArray();
 
         var packet = new SpawnNetworkObjectPacket
         {
             Type = networkObjectType,
             Id = networkObjectId,
             OwnerId = networkObject.OwnerId,
-            Fields = fields ?? Array.Empty<NetField>(),
-            Properties = properties ?? Array.Empty<NetProperty>()
+            Members = members ?? Array.Empty<NetMember>()
         };
 
         peer.SendPacket(packet);

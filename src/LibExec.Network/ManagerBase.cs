@@ -13,7 +13,7 @@ public abstract class ManagerBase
     {
         Manager = new NetManager(_listener)
         {
-            ChannelsCount = 6
+            ChannelsCount = 5
         };
         _listener.ConnectionRequestEvent += OnConnectionRequest;
         _listener.PeerConnectedEvent += OnPeerConnected;

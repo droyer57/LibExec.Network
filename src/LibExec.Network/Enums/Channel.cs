@@ -6,6 +6,5 @@ internal enum Channel : byte
     Spawn = 1,
     Destroy = 2,
     Rpc = 3,
-    ReplicateField = 4,
-    ReplicateProperty = 5
+    ReplicateMember = 4
 }

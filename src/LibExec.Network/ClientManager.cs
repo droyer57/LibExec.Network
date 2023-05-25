@@ -10,10 +10,8 @@ public sealed class ClientManager : ManagerBase
             Channel.Spawn, IsServer);
         NetworkManager.PacketProcessor.RegisterCallback<DestroyNetworkObjectPacket>(OnDestroyNetworkObject,
             Channel.Destroy, IsServer);
-        NetworkManager.PacketProcessor.RegisterCallback<UpdateFieldPacket>(OnUpdateField, Channel.ReplicateField,
+        NetworkManager.PacketProcessor.RegisterCallback<UpdateMemberPacket>(OnUpdateMember, Channel.ReplicateMember,
             IsServer);
-        NetworkManager.PacketProcessor.RegisterCallback<UpdatePropertyPacket>(OnUpdateProperty,
-            Channel.ReplicateProperty, IsServer);
     }
 
     public string Address { get; internal set; } = NetworkManager.LocalAddress;
@@ -56,14 +54,9 @@ public sealed class ClientManager : ManagerBase
             instance.Owner = NetConnection.Create(Manager.FirstPeer);
         }
 
-        foreach (var field in packet.Fields)
+        foreach (var member in packet.Members)
         {
-            NetworkManager.FieldInfos[field.Id].SetValue(instance, field.Value);
-        }
-
-        foreach (var property in packet.Properties)
-        {
-            NetworkManager.PropertyInfos[property.Id].SetValue(instance, property.Value);
+            NetworkManager.MemberInfos[member.Id].SetValue(instance, member.Value);
         }
 
         NetworkManager.AddNetworkObject(instance);
@@ -91,15 +84,9 @@ public sealed class ClientManager : ManagerBase
         Connection.SendPacket(packet, deliveryMethod);
     }
 
-    private static void OnUpdateField(UpdateFieldPacket packet)
+    private static void OnUpdateMember(UpdateMemberPacket packet)
     {
-        var instance = NetworkManager.NetworkObjects[packet.Field.NetworkObjectId];
-        NetworkManager.FieldInfos[packet.Field.Id].SetValue(instance, packet.Field.Value);
-    }
-
-    private static void OnUpdateProperty(UpdatePropertyPacket packet)
-    {
-        var instance = NetworkManager.NetworkObjects[packet.Property.NetworkObjectId];
-        NetworkManager.PropertyInfos[packet.Property.Id].SetValue(instance, packet.Property.Value);
+        var instance = NetworkManager.NetworkObjects[packet.Member.NetworkObjectId];
+        NetworkManager.MemberInfos[packet.Member.Id].SetValue(instance, packet.Member.Value);
     }
 }

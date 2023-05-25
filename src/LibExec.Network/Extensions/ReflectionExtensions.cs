@@ -71,7 +71,6 @@ internal static class ReflectionExtensions
         return Expression.Lambda<Action<NetworkObject, object>>(call, instance, value).Compile();
     }
 
-
     public static Action<NetworkObject, object> CreateSetterDelegate(this MemberInfo memberInfo)
     {
         var targetExp = Expression.Parameter(typeof(NetworkObject), "target");

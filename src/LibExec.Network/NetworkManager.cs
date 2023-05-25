@@ -27,8 +27,7 @@ public sealed class NetworkManager
         PacketProcessor = new PacketProcessor();
         PacketProcessor.RegisterType<NetworkObjectType>();
         PacketProcessor.RegisterType<NetMethod>();
-        PacketProcessor.RegisterType<NetField>();
-        PacketProcessor.RegisterType<NetProperty>();
+        PacketProcessor.RegisterType<NetMember>();
 
         ServerManager = new ServerManager();
         ClientManager = new ClientManager();
@@ -38,25 +37,20 @@ public sealed class NetworkManager
         AddMethods(Reflection.MulticastMethodInfos);
 
         ushort nextId = 0;
-        FieldInfos = Reflection.ReplicateFieldInfos.ToDictionary(_ => nextId, x => new FastMemberInfo(x, nextId++));
-        FieldInfosByType = FieldInfos.Values.GroupBy(x => x.DeclaringType)
-            .ToDictionary(x => x.Key, x => x.AsEnumerable());
+        var memberInfos = Reflection.ReplicateFieldInfos.Select(x => new FastMemberInfo(x, nextId++))
+            .Concat(Reflection.ReplicatePropertyInfos.Select(x => new FastMemberInfo(x, nextId++))).ToArray();
 
-        nextId = 0;
-        PropertyInfos =
-            Reflection.ReplicatePropertyInfos.ToDictionary(_ => nextId, x => new FastMemberInfo(x, nextId++));
-        PropertyInfosByType = PropertyInfos.Values.GroupBy(x => x.DeclaringType)
-            .ToDictionary(x => x.Key, x => x.AsEnumerable());
+        MemberInfos = memberInfos.ToDictionary(x => x.Id, x => x);
+        MemberInfosByType =
+            memberInfos.GroupBy(x => x.DeclaringType).ToDictionary(x => x.Key, x => x.AsEnumerable());
     }
 
     #region Internal
 
     internal Dictionary<uint, NetworkObject> NetworkObjects { get; } = new();
     internal BiDictionary<Type> NetworkObjectTypes { get; }
-    internal Dictionary<ushort, FastMemberInfo> FieldInfos { get; }
-    internal Dictionary<ushort, FastMemberInfo> PropertyInfos { get; }
-    internal Dictionary<Type, IEnumerable<FastMemberInfo>> FieldInfosByType { get; }
-    internal Dictionary<Type, IEnumerable<FastMemberInfo>> PropertyInfosByType { get; }
+    internal Dictionary<ushort, FastMemberInfo> MemberInfos { get; }
+    internal Dictionary<Type, IEnumerable<FastMemberInfo>> MemberInfosByType { get; }
     internal Dictionary<ushort, FastMethodInfo> Methods { get; } = new();
     internal PacketProcessor PacketProcessor { get; }
 
