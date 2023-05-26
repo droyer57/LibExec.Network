@@ -82,7 +82,7 @@ public sealed class ServerManager : ManagerBase
 
     private static void Spawn(NetworkObject networkObject, NetPeer peer)
     {
-        var networkObjectType = networkObject.GetType();
+        var networkObjectType = networkObject.Type;
         var networkObjectId = networkObject.Id;
 
         var members = NetworkManager.MemberInfosByType.GetValueOrDefault(networkObjectType)?.Where(x =>

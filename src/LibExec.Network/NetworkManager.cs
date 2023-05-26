@@ -74,7 +74,7 @@ public sealed class NetworkManager
     internal void AddNetworkObject(NetworkObject networkObject)
     {
         NetworkObjects.Add(networkObject.Id, networkObject);
-        if (networkObject.IsOwner && networkObject.GetType() == Reflection.PlayerType) // todo: NetworkPlayer class ? 
+        if (LocalPlayer == null! && networkObject.IsOwner && networkObject.Type == Reflection.PlayerType)
         {
             LocalPlayer = networkObject;
         }
