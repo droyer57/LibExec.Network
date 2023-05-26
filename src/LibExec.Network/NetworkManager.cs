@@ -111,7 +111,7 @@ public sealed class NetworkManager
 
     public int Port { get; private set; } = DefaultPort;
 
-    public NetworkObject? LocalPlayer { get; private set; }
+    public NetworkObject LocalPlayer { get; private set; } = null!;
     public ServerManager ServerManager { get; }
     public ClientManager ClientManager { get; }
 
@@ -196,9 +196,9 @@ public sealed class NetworkManager
         ClientManager.RemovePacket<T>();
     }
 
-    public T? GetLocalPlayer<T>() where T : NetworkObject
+    public T GetLocalPlayer<T>() where T : NetworkObject
     {
-        return LocalPlayer as T;
+        return (T)LocalPlayer;
     }
 
     public void Update()

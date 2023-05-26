@@ -100,7 +100,7 @@
 
     private void SendPacket()
     {
-        var player = NetworkManager.LocalPlayer!;
+        var player = NetworkManager.LocalPlayer;
         var packet = new MessagePacket { Text = _message, SenderId = player.Id.ToString() };
 
         NetworkManager.ClientManager.SendPacket(packet);
