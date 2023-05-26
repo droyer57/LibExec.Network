@@ -21,6 +21,6 @@ internal static class NetPeerExtensions
 
     public static bool IsLocal(this NetPeer peer)
     {
-        return NetworkManager.ClientManager.IsLocalPeer(peer);
+        return NetworkManager.ClientManager.IsLocalPeerId(peer.Id);
     }
 }

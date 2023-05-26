@@ -42,7 +42,7 @@ public sealed class ServerManager : ManagerBase
 
     protected override void OnPeerConnected(NetPeer peer)
     {
-        Connections[peer.Id] = new NetConnection(peer);
+        Connections[peer.Id] = new NetConnection(peer, AsServer);
 
         if (!peer.IsLocal())
         {
@@ -131,13 +131,16 @@ public sealed class ServerManager : ManagerBase
     {
         networkObject.Id = _nextId++;
         networkObject.OwnerId = owner?.Id ?? -1;
-        networkObject.Owner = NetConnection.Create(owner);
+        if (owner != null)
+        {
+            networkObject.Owner = Connections[owner.Id];
+        }
     }
 
     public void SendPacketToAll<T>(T packet, DeliveryMethod deliveryMethod = DeliveryMethod.ReliableOrdered,
         NetConnection? excludeConnection = null, bool excludeLocalConnection = false) where T : class, new()
     {
-        foreach (var connection in Connections.Values.Where(x => !x.Equals(excludeConnection)))
+        foreach (var connection in Connections.Values.Where(x => x != excludeConnection))
         {
             if (excludeLocalConnection && connection.IsLocal)
             {

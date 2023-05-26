@@ -7,11 +7,11 @@ public sealed class ClientManager : ManagerBase
     public ClientManager()
     {
         NetworkManager.PacketProcessor.RegisterCallback<SpawnNetworkObjectPacket>(OnSpawnNetworkObject,
-            Channel.Spawn, IsServer);
+            Channel.Spawn, AsServer);
         NetworkManager.PacketProcessor.RegisterCallback<DestroyNetworkObjectPacket>(OnDestroyNetworkObject,
-            Channel.Destroy, IsServer);
+            Channel.Destroy, AsServer);
         NetworkManager.PacketProcessor.RegisterCallback<UpdateMemberPacket>(OnUpdateMember, Channel.ReplicateMember,
-            IsServer);
+            AsServer);
     }
 
     public string Address { get; internal set; } = NetworkManager.LocalAddress;
@@ -33,7 +33,7 @@ public sealed class ClientManager : ManagerBase
 
     protected override void OnPeerConnected(NetPeer peer)
     {
-        Connection = new NetConnection(peer);
+        Connection = new NetConnection(peer, AsServer);
         ConnectionState = ConnectionState.Started;
     }
 
@@ -51,7 +51,7 @@ public sealed class ClientManager : ManagerBase
         instance.OwnerId = packet.OwnerId;
         if (instance.IsOwner)
         {
-            instance.Owner = new NetConnection(Manager.FirstPeer);
+            instance.Owner = Connection;
         }
 
         foreach (var member in packet.Members)
@@ -66,11 +66,6 @@ public sealed class ClientManager : ManagerBase
     {
         var instance = NetworkManager.NetworkObjects[packet.Id];
         NetworkManager.RemoveNetworkObject(instance);
-    }
-
-    internal bool IsLocalPeer(NetPeer peer)
-    {
-        return IsLocalPeerId(NetworkManager.IsServer ? peer.Id : peer.RemoteId);
     }
 
     internal bool IsLocalPeerId(int peerId)
