@@ -51,7 +51,7 @@ public sealed class ClientManager : ManagerBase
         instance.OwnerId = packet.OwnerId;
         if (instance.IsOwner)
         {
-            instance.Owner = NetConnection.Create(Manager.FirstPeer);
+            instance.Owner = new NetConnection(Manager.FirstPeer);
         }
 
         foreach (var member in packet.Members)

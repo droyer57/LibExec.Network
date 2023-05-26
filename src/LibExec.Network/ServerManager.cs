@@ -8,7 +8,7 @@ public sealed class ServerManager : ManagerBase
 
     private uint _nextId = FirstId;
 
-    public NetConnection[] Connections { get; private set; } = null!;
+    public Dictionary<int, NetConnection> Connections { get; } = new();
 
     internal override void Start()
     {
@@ -32,6 +32,7 @@ public sealed class ServerManager : ManagerBase
 
         _nextId = FirstId;
         ConnectionState = ConnectionState.Stopped;
+        Connections.Clear();
     }
 
     protected override void OnConnectionRequest(ConnectionRequest request)
@@ -41,7 +42,7 @@ public sealed class ServerManager : ManagerBase
 
     protected override void OnPeerConnected(NetPeer peer)
     {
-        UpdateConnections();
+        Connections[peer.Id] = new NetConnection(peer);
 
         if (!peer.IsLocal())
         {
@@ -62,7 +63,7 @@ public sealed class ServerManager : ManagerBase
 
     protected override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
-        UpdateConnections();
+        Connections.Remove(peer.Id);
 
         var data = NetworkManager.NetworkObjects.Where(x => x.Value.OwnerId == peer.Id);
         foreach (var item in data)
@@ -136,19 +137,14 @@ public sealed class ServerManager : ManagerBase
     public void SendPacketToAll<T>(T packet, DeliveryMethod deliveryMethod = DeliveryMethod.ReliableOrdered,
         NetConnection? excludeConnection = null, bool excludeLocalConnection = false) where T : class, new()
     {
-        foreach (var peer in Manager.ConnectedPeerList.Where(x => x != excludeConnection?.Peer))
+        foreach (var connection in Connections.Values.Where(x => !x.Equals(excludeConnection)))
         {
-            if (excludeLocalConnection && peer.IsLocal())
+            if (excludeLocalConnection && connection.IsLocal)
             {
                 continue;
             }
 
-            peer.SendPacket(packet, deliveryMethod);
+            connection.SendPacket(packet, deliveryMethod);
         }
-    }
-
-    private void UpdateConnections()
-    {
-        Connections = Manager.ConnectedPeerList.Select(x => new NetConnection(x)).ToArray();
     }
 }

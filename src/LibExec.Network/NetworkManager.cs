@@ -41,8 +41,7 @@ public sealed class NetworkManager
             .Concat(Reflection.ReplicatePropertyInfos.Select(x => new FastMemberInfo(x, nextId++))).ToArray();
 
         MemberInfos = memberInfos.ToDictionary(x => x.Id, x => x);
-        MemberInfosByType =
-            memberInfos.GroupBy(x => x.DeclaringType).ToDictionary(x => x.Key, x => x.AsEnumerable());
+        MemberInfosByType = memberInfos.GroupBy(x => x.DeclaringType).ToDictionary(x => x.Key, x => x.AsEnumerable());
     }
 
     #region Internal
@@ -171,6 +170,20 @@ public sealed class NetworkManager
     }
 
     public void RegisterPacket<T>(Action<T, NetConnection> serverCallback, Action<T, NetConnection> clientCallback)
+        where T : class, new()
+    {
+        ServerManager.RegisterPacket(serverCallback);
+        ClientManager.RegisterPacket(clientCallback);
+    }
+
+    public void RegisterPacket<T>(Action<T, NetConnection> serverCallback, Action<T> clientCallback)
+        where T : class, new()
+    {
+        ServerManager.RegisterPacket(serverCallback);
+        ClientManager.RegisterPacket(clientCallback);
+    }
+
+    public void RegisterPacket<T>(Action<T> serverCallback, Action<T, NetConnection> clientCallback)
         where T : class, new()
     {
         ServerManager.RegisterPacket(serverCallback);
