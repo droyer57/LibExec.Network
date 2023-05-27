@@ -52,9 +52,9 @@ public sealed class ServerManager : ManagerBase
             }
         }
 
-        if (Reflection.PlayerType == null) return;
+        if (NetworkManager.PlayerClassId == 0) return;
 
-        var instance = NetworkManager.CreateNetworkObject(Reflection.PlayerType);
+        var instance = NetworkManager.CreateNetworkObject(NetworkManager.PlayerClassId);
         InitNetworkObject(instance, peer);
 
         SpawnToAll(instance);
@@ -82,17 +82,16 @@ public sealed class ServerManager : ManagerBase
 
     private static void Spawn(NetworkObject networkObject, NetPeer peer)
     {
-        var networkObjectType = networkObject.Type;
         var networkObjectId = networkObject.Id;
 
-        var members = NetworkManager.MemberInfosByType.GetValueOrDefault(networkObjectType)?.Where(x =>
+        var members = NetworkManager.MemberInfosByClassId.GetValueOrDefault(networkObject.ClassId)?.Where(x =>
                 x.Attribute.Condition != NetworkObject.OwnerOnly || networkObject.OwnerId == peer.Id)
             .Select(x => new NetMember(networkObjectId, x.Id, x.GetValue(networkObject)))
             .Where(x => x.Value != null!).ToArray();
 
         var packet = new SpawnNetworkObjectPacket
         {
-            Type = networkObjectType,
+            ClassId = networkObject.ClassId,
             Id = networkObjectId,
             OwnerId = networkObject.OwnerId,
             Members = members ?? Array.Empty<NetMember>()

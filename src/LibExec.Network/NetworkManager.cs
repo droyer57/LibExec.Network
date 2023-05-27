@@ -8,7 +8,7 @@ public sealed class NetworkManager
     public const int DefaultPort = 1995;
 
     internal const string Key = "DDurBXaw8sLsYs9x";
-    private readonly Dictionary<Type, Func<NetworkObject>> _networkObjectsCache = new();
+    private readonly Dictionary<ushort, Func<NetworkObject>> _networkObjectsCache = new();
     private ushort _nextMethodId;
 
     public NetworkManager()
@@ -22,40 +22,44 @@ public sealed class NetworkManager
 
         var _ = new Reflection();
 
-        NetworkObjectTypes = new BiDictionary<Type>(Reflection.NetworkObjectTypes);
+        AddMethods(Reflection.ServerMethodInfos);
+        AddMethods(Reflection.ClientMethodInfos);
+        AddMethods(Reflection.MulticastMethodInfos);
+
+        ushort nextId = 1;
+        NetworkObjectIds = Reflection.NetworkObjectTypes.ToDictionary(x => x, _ => nextId++);
+
+        nextId = 0;
+        var memberInfos = Reflection.ReplicateFieldInfos.Select(x => new FastMemberInfo(x, nextId++))
+            .Concat(Reflection.ReplicatePropertyInfos.Select(x => new FastMemberInfo(x, nextId++))).ToArray();
+
+        MemberInfos = memberInfos.ToDictionary(x => x.Id, x => x);
+        MemberInfosByClassId =
+            memberInfos.GroupBy(x => x.DeclaringClassId).ToDictionary(x => x.Key, x => x.AsEnumerable());
 
         PacketProcessor = new PacketProcessor();
-        PacketProcessor.RegisterType<NetworkObjectType>();
         PacketProcessor.RegisterType<NetMethod>();
         PacketProcessor.RegisterType<NetMember>();
 
         ServerManager = new ServerManager();
         ClientManager = new ClientManager();
-
-        AddMethods(Reflection.ServerMethodInfos);
-        AddMethods(Reflection.ClientMethodInfos);
-        AddMethods(Reflection.MulticastMethodInfos);
-
-        ushort nextId = 0;
-        var memberInfos = Reflection.ReplicateFieldInfos.Select(x => new FastMemberInfo(x, nextId++))
-            .Concat(Reflection.ReplicatePropertyInfos.Select(x => new FastMemberInfo(x, nextId++))).ToArray();
-
-        MemberInfos = memberInfos.ToDictionary(x => x.Id, x => x);
-        MemberInfosByType = memberInfos.GroupBy(x => x.DeclaringType).ToDictionary(x => x.Key, x => x.AsEnumerable());
     }
 
     #region Internal
 
     internal Dictionary<uint, NetworkObject> NetworkObjects { get; } = new();
-    internal BiDictionary<Type> NetworkObjectTypes { get; }
+    internal Dictionary<Type, ushort> NetworkObjectIds { get; }
     internal Dictionary<ushort, FastMemberInfo> MemberInfos { get; }
-    internal Dictionary<Type, IEnumerable<FastMemberInfo>> MemberInfosByType { get; }
+    internal Dictionary<ushort, IEnumerable<FastMemberInfo>> MemberInfosByClassId { get; }
     internal Dictionary<ushort, FastMethodInfo> Methods { get; } = new();
     internal PacketProcessor PacketProcessor { get; }
 
-    internal NetworkObject CreateNetworkObject(Type type)
+    // ReSharper disable once UnusedAutoPropertyAccessor.Local
+    internal ushort PlayerClassId { get; set; }
+
+    internal NetworkObject CreateNetworkObject(ushort classId)
     {
-        if (!_networkObjectsCache.TryGetValue(type, out var creator))
+        if (!_networkObjectsCache.TryGetValue(classId, out var creator))
         {
             throw new InvalidOperationException($"{nameof(CreateNetworkObject)}");
         }
@@ -74,7 +78,7 @@ public sealed class NetworkManager
     internal void AddNetworkObject(NetworkObject networkObject)
     {
         NetworkObjects.Add(networkObject.Id, networkObject);
-        if (LocalPlayer == null! && networkObject.IsOwner && networkObject.Type == Reflection.PlayerType)
+        if (LocalPlayer == null! && networkObject.IsOwner && networkObject.ClassId == PlayerClassId)
         {
             LocalPlayer = networkObject;
         }
@@ -265,9 +269,9 @@ public sealed class NetworkManager
     }
 
     // ReSharper disable once UnusedMember.Local
-    private void RegisterNetworkObject<T>() where T : NetworkObject, new()
+    private void RegisterNetworkObject<T>(ushort classId) where T : NetworkObject, new()
     {
-        _networkObjectsCache.Add(typeof(T), () => new T());
+        _networkObjectsCache.Add(classId, () => new T());
     }
 
     #endregion

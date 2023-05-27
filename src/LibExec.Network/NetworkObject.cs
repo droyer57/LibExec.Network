@@ -9,11 +9,7 @@ public abstract class NetworkObject
     internal int OwnerId { get; set; }
     public bool IsOwner => ClientManager.IsLocalPeerId(OwnerId);
     public NetConnection? Owner { get; internal set; }
-
-#nullable disable
-    // ReSharper disable once UnusedAutoPropertyAccessor.Global
-    internal Type Type { get; set; }
-#nullable restore
+    public ushort ClassId { get; set; }
 
     protected static NetworkManager NetworkManager => NetworkManager.Instance;
     protected static ClientManager ClientManager => NetworkManager.ClientManager;

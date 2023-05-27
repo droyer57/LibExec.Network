@@ -16,11 +16,14 @@ internal sealed class RpcCodeGenerator : CodeGenerator
 
     protected override void Process()
     {
-        var serverMethods = Resource.NetworkObjectMethods
+        var networkObjectMethods =
+            Resource.NetworkObjectTypes.SelectMany(x => x.Methods).Where(x => x.HasBody).ToArray();
+
+        var serverMethods = networkObjectMethods
             .Where(x => x.CustomAttributes.Any(a => a.AttributeType.Name == ServerAttributeName)).ToArray();
-        var clientMethods = Resource.NetworkObjectMethods
+        var clientMethods = networkObjectMethods
             .Where(x => x.CustomAttributes.Any(a => a.AttributeType.Name == ClientAttributeName)).ToArray();
-        var multicastMethods = Resource.NetworkObjectMethods
+        var multicastMethods = networkObjectMethods
             .Where(x => x.CustomAttributes.Any(a => a.AttributeType.Name == MulticastAttributeName)).ToArray();
 
         AddMethods(serverMethods);
@@ -59,6 +62,8 @@ internal sealed class RpcCodeGenerator : CodeGenerator
     private void Execute(MethodDefinition method, MethodReference patchMethodRef)
     {
         // ServerPatch(NetworkObject instance, ushort methodId, object[] args)
+        // ClientPatch(NetworkObject instance, ushort methodId, object[] args)
+        // MulticastPatch(NetworkObject instance, ushort methodId, object[] args)
 
         ExtendedIlProcessor extendedIlProcessor = method.Body.GetILProcessor();
 

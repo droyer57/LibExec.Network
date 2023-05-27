@@ -46,7 +46,7 @@ public sealed class ClientManager : ManagerBase
 
     private void OnSpawnNetworkObject(SpawnNetworkObjectPacket packet)
     {
-        var instance = NetworkManager.CreateNetworkObject(packet.Type);
+        var instance = NetworkManager.CreateNetworkObject(packet.ClassId);
         instance.Id = packet.Id;
         instance.OwnerId = packet.OwnerId;
         if (instance.IsOwner)

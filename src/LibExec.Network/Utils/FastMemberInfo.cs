@@ -15,22 +15,25 @@ internal sealed class FastMemberInfo
         _getter = memberInfo.CreateGetterDelegate();
 
         Type = memberInfo is FieldInfo field ? field.FieldType : ((PropertyInfo)memberInfo).PropertyType;
-        DeclaringType = memberInfo.DeclaringType ??
-                        throw new ArgumentNullException(nameof(memberInfo.DeclaringType));
+        var declaringType = memberInfo.DeclaringType ??
+                            throw new ArgumentNullException(nameof(memberInfo.DeclaringType));
+        DeclaringClassId = NetworkManager.NetworkObjectIds[declaringType];
         Attribute = memberInfo.GetCustomAttribute<ReplicateAttribute>()!;
 
         if (Attribute.OnChange != null)
         {
-            var onChangeMethod = DeclaringType.GetMethod(Attribute.OnChange,
+            var onChangeMethod = declaringType.GetMethod(Attribute.OnChange,
                                      BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) ??
                                  throw new ArgumentNullException();
             _onChange = onChangeMethod.CreateOnChangeDelegate();
         }
     }
 
+    private static NetworkManager NetworkManager => NetworkManager.Instance;
+
     public ushort Id { get; }
     public Type Type { get; }
-    public Type DeclaringType { get; }
+    public ushort DeclaringClassId { get; }
     public ReplicateAttribute Attribute { get; }
 
     public object GetValue(NetworkObject instance)

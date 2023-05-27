@@ -43,7 +43,7 @@ public static class NetDataExtensions
 
     public static void Put(this NetDataWriter writer, Type type, object value)
     {
-        NetWriterActions[value.GetType()].Invoke(writer, value);
+        NetWriterActions[type].Invoke(writer, value);
     }
 
     public static object Get(this NetDataReader reader, Type type)

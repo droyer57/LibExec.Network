@@ -24,8 +24,6 @@ internal sealed class Reflection
         var entryPacketTypes = entryAssembly.GetTypesByAttribute<PacketAttribute>();
         PacketTypes = executingPacketTypes.Concat(entryPacketTypes).ToArray();
 
-        PlayerType = NetworkObjectTypes.FirstOrDefault(x => x.GetCustomAttribute<NetworkPlayerAttribute>() != null);
-
         ServerMethodInfos = NetworkObjectTypes.SelectMany(x => x.GetMethodsByAttribute<ServerAttribute>()).ToArray();
         MulticastMethodInfos = NetworkObjectTypes.SelectMany(x => x.GetMethodsByAttribute<MulticastAttribute>())
             .ToArray();
@@ -40,7 +38,6 @@ internal sealed class Reflection
 
     public static Type[] NetworkObjectTypes { get; private set; } = null!;
     public static Type[] PacketTypes { get; private set; } = null!;
-    public static Type? PlayerType { get; private set; }
     public static MethodInfo[] ServerMethodInfos { get; private set; } = null!;
     public static MethodInfo[] MulticastMethodInfos { get; private set; } = null!;
     public static MethodInfo[] ClientMethodInfos { get; private set; } = null!;

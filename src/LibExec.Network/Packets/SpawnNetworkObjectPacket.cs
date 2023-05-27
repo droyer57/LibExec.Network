@@ -5,6 +5,6 @@ internal sealed class SpawnNetworkObjectPacket
 {
     public uint Id { get; init; }
     public int OwnerId { get; init; }
-    public NetworkObjectType Type { get; init; } = null!;
+    public ushort ClassId { get; init; }
     public NetMember[] Members { get; init; } = null!;
 }

@@ -1,4 +1,4 @@
-using System;
+using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -9,21 +9,24 @@ namespace CodeGenerator.Generators;
 
 internal sealed class InitCodeGenerator : CodeGenerator
 {
-    private const string RegisterNetworkObjectMethodName = "RegisterNetworkObject";
-    private MethodReference _getTypeMethodRef = null!;
     private TypeDefinition _networkObjectType = null!;
-
+    private MethodDefinition _playerClassIdSetMethod = null!;
     private MethodDefinition _registerNetworkObjectMethod = null!;
+    private Dictionary<TypeDefinition, ushort> _typesId = null!;
 
     protected override void Process()
     {
-        var networkManagerType = LibModule.Types.First(x => x.Name == NetworkManagerClassName);
-        _networkObjectType = LibModule.Types.First(x => x.Name == NetworkObjectClassName);
+        var networkManagerType = LibModule.Types.First(x => x.Name == NetworkManagerName);
+        _networkObjectType = LibModule.Types.First(x => x.Name == NetworkObjectName);
         var ctorMethod = networkManagerType.Methods.First(x => x.Name == ConstructorName);
 
-        _registerNetworkObjectMethod = networkManagerType.Methods.First(m => m.Name == RegisterNetworkObjectMethodName);
+        _registerNetworkObjectMethod = networkManagerType.Methods.First(m => m.Name == RegisterNetworkObjectName);
 
-        _getTypeMethodRef = Module.ImportReference(typeof(Type).GetMethod("GetTypeFromHandle"));
+        _playerClassIdSetMethod = networkManagerType.Properties.First(x => x.Name == PlayerClassIdName).SetMethod;
+        _playerClassIdSetMethod.IsPublic = true;
+
+        ushort nextId = 1;
+        _typesId = Resource.NetworkObjectTypes.ToDictionary(x => x, _ => nextId++);
 
         ExtendedIlProcessor ilProcessor = ctorMethod.Body.GetILProcessor();
         ilProcessor.Index = ctorMethod.Body.Instructions.Count - 2;
@@ -33,32 +36,48 @@ internal sealed class InitCodeGenerator : CodeGenerator
             Execute(type, ilProcessor);
             foreach (var constructor in type.GetConstructors())
             {
-                ExecuteSetType(type, constructor.Body.GetILProcessor());
+                Execute(type, constructor);
             }
         }
     }
 
     private void Execute(TypeDefinition type, ExtendedIlProcessor ilProcessor)
     {
+        // this.RegisterNetworkObject<T>(ushort classId)
+
         var method = _registerNetworkObjectMethod.MakeGenericMethod(LibModule.ImportReference(type));
 
-        ilProcessor.EmitIndex(OpCodes.Ldarg_0);
-        ilProcessor.EmitIndex(OpCodes.Call, method);
+        CallMethod(ilProcessor, type, method);
 
         if (!type.HasDefaultConstructor())
         {
             type.CreateDefaultConstructor();
         }
+
+        if (type.CustomAttributes.FirstOrDefault(x => x.AttributeType.Name == NetworkPlayerAttributeName) != null)
+        {
+            // this.PlayerClassId = _typesId[type] (NetworkManager)
+            CallMethod(ilProcessor, type, _playerClassIdSetMethod);
+        }
     }
 
-    private void ExecuteSetType(TypeDefinition type, ExtendedIlProcessor ilProcessor)
+    private void Execute(TypeDefinition type, MethodDefinition method)
     {
-        var setMethod = _networkObjectType.Properties.First(x => x.Name == "Type").SetMethod;
+        // this.ClassId = _typesId[type] (NetworkObject)
+
+        var setMethod = _networkObjectType.Properties.First(x => x.Name == ClassIdName).SetMethod;
         setMethod.IsPublic = true;
 
-        ilProcessor.EmitFirst(OpCodes.Ldarg_0);
-        ilProcessor.EmitFirst(OpCodes.Ldtoken, type);
-        ilProcessor.EmitFirst(OpCodes.Call, _getTypeMethodRef);
-        ilProcessor.EmitFirst(OpCodes.Call, Module.ImportReference(setMethod));
+        ExtendedIlProcessor ilProcessor = method.Body.GetILProcessor();
+        ilProcessor.Index = method.Body.Instructions.Count - 2;
+
+        CallMethod(ilProcessor, type, Module.ImportReference(setMethod));
+    }
+
+    private void CallMethod(ExtendedIlProcessor ilProcessor, TypeDefinition type, MethodReference method)
+    {
+        ilProcessor.EmitIndex(OpCodes.Ldarg_0);
+        ilProcessor.EmitIndex(OpCodes.Ldc_I4, _typesId[type]);
+        ilProcessor.EmitIndex(OpCodes.Call, method);
     }
 }

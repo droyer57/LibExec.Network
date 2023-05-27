@@ -8,7 +8,6 @@ namespace CodeGenerator.Generators;
 
 internal sealed class ReplicateCodeGenerator : CodeGenerator
 {
-    private const string UpdateMemberMethodName = "UpdateMember";
     private readonly Dictionary<MemberReference, ushort> _membersId = new();
     private HashSet<FieldDefinition> _fields = null!;
     private ushort _nextId;
@@ -67,8 +66,8 @@ internal sealed class ReplicateCodeGenerator : CodeGenerator
             _membersId.Add(property, _nextId++);
         }
 
-        var updateMemberMethod = LibModule.Types.First(x => x.Name == NetworkObjectClassName).Methods
-            .First(x => x.Name == UpdateMemberMethodName);
+        var updateMemberMethod = LibModule.Types.First(x => x.Name == NetworkObjectName).Methods
+            .First(x => x.Name == UpdateMemberName);
         updateMemberMethod.IsPublic = true;
         _updateMemberMethodRef = Module.ImportReference(updateMemberMethod);
     }
