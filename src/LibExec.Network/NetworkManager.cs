@@ -164,7 +164,7 @@ public sealed class NetworkManager
 
     public IEnumerable<T> Query<T>() where T : NetworkObject
     {
-        return NetworkObjects.Values.OrderBy(x => x.Id).OfType<T>();
+        return NetworkObjects.Values.OfType<T>();
     }
 
     public void RegisterPacket<T>(Action<T> serverCallback, Action<T> clientCallback) where T : class, new()

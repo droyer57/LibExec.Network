@@ -54,7 +54,7 @@ public abstract class NetworkObject
     private void UpdateMember(object newValue, ushort memberId)
     {
         var memberInfo = NetworkManager.MemberInfos[memberId];
-        var oldValue = memberInfo.SetValue(this, newValue);
+        memberInfo.SetValue(this, newValue, out var oldValue);
 
         if (!NetworkManager.IsServer || !IsValid || newValue == oldValue) return;
 

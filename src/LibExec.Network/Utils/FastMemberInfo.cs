@@ -7,6 +7,7 @@ internal sealed class FastMemberInfo
     private readonly Func<NetworkObject, object> _getter;
     private readonly Action<NetworkObject, object>? _onChange;
     private readonly Action<NetworkObject, object> _setter;
+    private readonly Dictionary<NetworkObject, object> _oldValues = new();
 
     public FastMemberInfo(MemberInfo memberInfo, ushort id)
     {
@@ -41,15 +42,21 @@ internal sealed class FastMemberInfo
         return _getter.Invoke(instance);
     }
 
-    public object SetValue(NetworkObject instance, object value)
+    public void SetValue(NetworkObject instance, object value)
     {
-        var oldValue = GetValue(instance);
-        if (value != oldValue)
+        var oldValue = _oldValues.GetValueOrDefault(instance);
+
+        if (!value.Equals(oldValue))
         {
             _setter.Invoke(instance, value);
-            _onChange?.Invoke(instance, oldValue);
+            _onChange?.Invoke(instance, oldValue!);
+            _oldValues[instance] = value;
         }
+    }
 
-        return oldValue;
+    public void SetValue(NetworkObject instance, object value, out object oldValue)
+    {
+        oldValue = _oldValues.GetValueOrDefault(instance)!;
+        SetValue(instance, value);
     }
 }

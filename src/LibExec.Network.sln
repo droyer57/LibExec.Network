@@ -4,6 +4,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibExec.Network", "LibExec.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeGenerator", "CodeGenerator\CodeGenerator.csproj", "{A537E9E2-F00D-4DD0-9C92-8022BE6A0592}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sandbox", "Sandbox\Sandbox.csproj", "{4DEBD19A-E15D-4B71-A790-A2FF1C2230E9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibExec.MonoGame", "LibExec.MonoGame\LibExec.MonoGame.csproj", "{B6A06B6E-371C-4516-81E8-FD1471684F04}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +22,13 @@ Global
 		{A537E9E2-F00D-4DD0-9C92-8022BE6A0592}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A537E9E2-F00D-4DD0-9C92-8022BE6A0592}.Debug|Any CPU.ActiveCfg = Release|Any CPU
 		{A537E9E2-F00D-4DD0-9C92-8022BE6A0592}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{4DEBD19A-E15D-4B71-A790-A2FF1C2230E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DEBD19A-E15D-4B71-A790-A2FF1C2230E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DEBD19A-E15D-4B71-A790-A2FF1C2230E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DEBD19A-E15D-4B71-A790-A2FF1C2230E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6A06B6E-371C-4516-81E8-FD1471684F04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6A06B6E-371C-4516-81E8-FD1471684F04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6A06B6E-371C-4516-81E8-FD1471684F04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6A06B6E-371C-4516-81E8-FD1471684F04}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
