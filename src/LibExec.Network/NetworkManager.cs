@@ -54,8 +54,8 @@ public sealed class NetworkManager
     internal Dictionary<ushort, FastMethodInfo> Methods { get; } = new();
     internal PacketProcessor PacketProcessor { get; }
 
-    // ReSharper disable once UnusedAutoPropertyAccessor.Local
-    internal ushort PlayerClassId { get; set; }
+    // ReSharper disable once UnusedAutoPropertyAccessor.Global
+    internal ushort PlayerClassId { get; set; } // set by the code generator
 
     internal NetworkObject CreateNetworkObject(ushort classId)
     {
@@ -164,7 +164,7 @@ public sealed class NetworkManager
 
     public IEnumerable<T> Query<T>() where T : NetworkObject
     {
-        return NetworkObjects.Values.OfType<T>();
+        return NetworkObjects.Values.OrderBy(x => x.Id).OfType<T>();
     }
 
     public void RegisterPacket<T>(Action<T> serverCallback, Action<T> clientCallback) where T : class, new()

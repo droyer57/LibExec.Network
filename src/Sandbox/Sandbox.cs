@@ -1,3 +1,4 @@
+using System;
 using ImGuiNET;
 using LibExec.MonoGame;
 using LibExec.Network;
@@ -8,24 +9,56 @@ namespace Sandbox;
 
 public sealed class Sandbox : Window
 {
+    private static Sandbox _instance = null!;
+
     private readonly NetworkManager _networkManager = new();
     private string _address = NetworkManager.LocalAddress;
+    private GameManager? _gameManager;
     private string _port = NetworkManager.DefaultPort.ToString();
 
     private string _pseudo = string.Empty;
 
     public Sandbox()
     {
+        _instance = this;
+
         ImGuiRenderer.AddFont("Sandbox.Fonts.Cousine-Regular.ttf", 16);
         ImGuiRenderer.AddFont("Sandbox.Fonts.DroidSans.ttf", 16);
         ImGuiRenderer.AddFont("Sandbox.Fonts.Karla-Regular.ttf", 16);
         ImGuiRenderer.AddFont("Sandbox.Fonts.ProggyTiny.ttf", 16);
         ImGuiRenderer.AddFont("Sandbox.Fonts.Roboto-Medium.ttf", 16);
+
+        _networkManager.ServerManager.ConnectionStateChangedEvent += OnServerConnectionStateChanged;
+        _networkManager.NetworkObjectEvent += OnNetworkObject;
+
+        var args = Environment.GetCommandLineArgs();
+        if (args.Length == 2)
+        {
+            _pseudo = args[1];
+        }
     }
+
+    public static string Pseudo => _instance._pseudo;
 
     private bool IsServerRunning => _networkManager.ServerManager.IsRunning;
     private bool IsClientRunning => _networkManager.ClientManager.IsRunning;
-    private bool IsClientStarted => _networkManager.ClientManager.IsStarted;
+
+    private void OnServerConnectionStateChanged(ConnectionState state)
+    {
+        if (state == ConnectionState.Started)
+        {
+            _gameManager = new GameManager();
+            _gameManager.Spawn();
+        }
+    }
+
+    private void OnNetworkObject(NetworkObject networkObject, NetworkObjectEvent networkObjectEvent)
+    {
+        if (networkObjectEvent == NetworkObjectEvent.Spawned && networkObject is GameManager gameManager)
+        {
+            _gameManager = gameManager;
+        }
+    }
 
     protected override void Start()
     {
@@ -45,29 +78,51 @@ public sealed class Sandbox : Window
     {
         ImGui.ShowDemoWindow();
 
-        ImGui.Begin("Settings");
-        ImGui.InputTextWithHint(string.Empty, "Pseudo", ref _pseudo, 25);
+        DrawSettingsWindow();
+        DrawNetworkWindow();
 
-        ImGui.InputTextWithHint(string.Empty, "Address", ref _address, 25);
-        ImGui.SameLine();
-        ImGui.InputTextWithHint(string.Empty, "Port", ref _port, 5);
-
-        ImGui.End();
-
-        ImGui.Begin("Network");
-
-        Gui.DrawButton("Start Server", StartServer, IsServerRunning);
-        ImGui.SameLine();
-        Gui.DrawButton("Start Client", StartClient, IsClientRunning);
-
-        Gui.DrawButton("Disconnect", Disconnect, enabled: IsServerRunning || IsClientRunning);
-
-        ImGui.End();
+        if (_gameManager?.IsValid == true)
+            _gameManager.Draw();
 
         foreach (var player in _networkManager.Query<Player>()) // todo: improve this in the lib
         {
             player.Draw();
         }
+    }
+
+    private void DrawSettingsWindow()
+    {
+        ImGui.BeginDisabled(IsServerRunning || IsClientRunning);
+
+        ImGui.Begin("Settings");
+
+        ImGui.PushItemWidth(-1);
+        ImGui.InputTextWithHint("##Pseudo", "Pseudo", ref _pseudo, 25);
+        ImGui.PopItemWidth();
+
+        ImGui.InputTextWithHint("##Address", "Address", ref _address, 25);
+
+        ImGui.SameLine();
+        ImGui.PushItemWidth(-1);
+        ImGui.InputTextWithHint("##Port", "Port", ref _port, 5);
+        ImGui.PopItemWidth();
+
+        ImGui.End();
+
+        ImGui.EndDisabled();
+    }
+
+    private void DrawNetworkWindow()
+    {
+        ImGui.Begin("Network");
+
+        Gui.Button("Start Server", StartServer, IsServerRunning);
+        ImGui.SameLine();
+        Gui.Button("Start Client", StartClient, IsClientRunning || string.IsNullOrWhiteSpace(Pseudo));
+
+        Gui.Button("Disconnect", Disconnect, enabled: IsServerRunning || IsClientRunning);
+
+        ImGui.End();
     }
 
     private void StartServer()

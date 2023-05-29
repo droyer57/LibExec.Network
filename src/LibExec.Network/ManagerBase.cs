@@ -62,7 +62,11 @@ public abstract class ManagerBase
 
         ConnectionState = ConnectionState.Stopping;
         Manager.Stop();
-        NetworkManager.NetworkObjects.Clear();
+
+        if (AsServer || !NetworkManager.IsServer)
+        {
+            NetworkManager.NetworkObjects.Clear();
+        }
     }
 
     protected virtual void OnConnectionRequest(ConnectionRequest request)

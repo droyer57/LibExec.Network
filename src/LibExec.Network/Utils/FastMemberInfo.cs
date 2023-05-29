@@ -5,9 +5,9 @@ namespace LibExec.Network;
 internal sealed class FastMemberInfo
 {
     private readonly Func<NetworkObject, object> _getter;
+    private readonly Dictionary<NetworkObject, object> _oldValues = new();
     private readonly Action<NetworkObject, object>? _onChange;
     private readonly Action<NetworkObject, object> _setter;
-    private readonly Dictionary<NetworkObject, object> _oldValues = new();
 
     public FastMemberInfo(MemberInfo memberInfo, ushort id)
     {
