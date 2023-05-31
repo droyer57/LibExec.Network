@@ -9,7 +9,7 @@ public abstract class NetworkObject
     internal int OwnerId { get; set; }
     public bool IsOwner => ClientManager.IsLocalPeerId(OwnerId);
     public NetConnection? Owner { get; internal set; }
-    public ushort ClassId { get; set; }
+    internal ushort ClassId { get; set; } // set by the code generator
 
     protected static NetworkManager NetworkManager => NetworkManager.Instance;
     protected static ClientManager ClientManager => NetworkManager.ClientManager;
@@ -51,7 +51,7 @@ public abstract class NetworkObject
     }
 
     // ReSharper disable once UnusedMember.Local
-    private void UpdateMember(object newValue, ushort memberId)
+    private void UpdateMember(object newValue, ushort memberId) // called by the code generator
     {
         var memberInfo = NetworkManager.MemberInfos[memberId];
         memberInfo.SetValue(this, newValue, out var oldValue);

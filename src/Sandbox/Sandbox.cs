@@ -42,6 +42,7 @@ public sealed class Sandbox : Window
 
     private bool IsServerRunning => _networkManager.ServerManager.IsRunning;
     private bool IsClientRunning => _networkManager.ClientManager.IsRunning;
+    private bool IsClientStarted => _networkManager.ClientManager.IsStarted;
 
     private void OnServerConnectionStateChanged(ConnectionState state)
     {
@@ -116,7 +117,7 @@ public sealed class Sandbox : Window
     {
         ImGui.Begin("Network");
 
-        Gui.Button("Start Server", StartServer, IsServerRunning);
+        Gui.Button("Start Server", StartServer, IsServerRunning || IsClientStarted);
         ImGui.SameLine();
         Gui.Button("Start Client", StartClient, IsClientRunning || string.IsNullOrWhiteSpace(Pseudo));
 
@@ -139,5 +140,12 @@ public sealed class Sandbox : Window
     {
         _networkManager.StopClient();
         _networkManager.StopServer();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        Disconnect();
     }
 }
