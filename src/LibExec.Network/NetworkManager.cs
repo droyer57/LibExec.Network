@@ -82,9 +82,6 @@ public sealed class NetworkManager
         {
             LocalPlayer = networkObject;
         }
-
-        networkObject.OnSpawn();
-        NetworkObjectEvent?.Invoke(networkObject, Network.NetworkObjectEvent.Spawned);
     }
 
     internal void RemoveNetworkObject(NetworkObject networkObject)
@@ -105,6 +102,12 @@ public sealed class NetworkManager
     internal void InvokeNetworkEvent()
     {
         NetworkEvent?.Invoke();
+    }
+
+    internal void InvokeNetworkObjectSpawn(NetworkObject networkObject)
+    {
+        networkObject.OnSpawn();
+        NetworkObjectEvent?.Invoke(networkObject, Network.NetworkObjectEvent.Spawned);
     }
 
     #endregion

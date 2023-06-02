@@ -13,7 +13,7 @@ public abstract class ManagerBase
     {
         Manager = new NetManager(_listener)
         {
-            ChannelsCount = 5
+            ChannelsCount = 6
         };
         _listener.ConnectionRequestEvent += OnConnectionRequest;
         _listener.PeerConnectedEvent += OnPeerConnected;
@@ -85,7 +85,16 @@ public abstract class ManagerBase
         DeliveryMethod deliveryMethod)
     {
         var connection = AsServer ? ServerManager.Connections[peer.Id] : ClientManager.Connection;
-        NetworkManager.PacketProcessor.ReadAllPackets(reader, connection, channel, AsServer);
+
+        if (channel == (byte)Channel.AllObjects)
+        {
+            ClientManager.OnReceiveAllObjects(reader);
+        }
+        else
+        {
+            NetworkManager.PacketProcessor.ReadAllPackets(reader, connection, channel, AsServer);
+        }
+
         NetworkManager.InvokeNetworkEvent();
         reader.Recycle();
     }

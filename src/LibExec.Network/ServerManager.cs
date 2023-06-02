@@ -46,19 +46,16 @@ public sealed class ServerManager : ManagerBase
 
         if (!peer.IsLocal())
         {
-            foreach (var networkObject in NetworkManager.NetworkObjects.Values)
-            {
-                Spawn(networkObject, peer);
-            }
+            SendAllObjects(peer);
         }
 
         if (NetworkManager.PlayerClassId == 0) return;
 
         var instance = NetworkManager.CreateNetworkObject(NetworkManager.PlayerClassId);
         InitNetworkObject(instance, peer);
-
         SpawnToAll(instance);
         NetworkManager.AddNetworkObject(instance);
+        NetworkManager.InvokeNetworkObjectSpawn(instance);
     }
 
     protected override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
@@ -100,11 +97,41 @@ public sealed class ServerManager : ManagerBase
         peer.SendPacket(packet);
     }
 
+    private static void SendAllObjects(NetPeer peer)
+    {
+        var networkObjets = NetworkManager.NetworkObjects.Values;
+
+        var writer = NetworkManager.PacketProcessor.Writer;
+        writer.Put((ushort)networkObjets.Count);
+        foreach (var obj in networkObjets)
+        {
+            writer.Put(obj.ClassId);
+            writer.Put(obj.Id);
+        }
+
+        foreach (var obj in networkObjets)
+        {
+            var members = NetworkManager.MemberInfosByClassId.GetValueOrDefault(obj.ClassId)?.Where(x =>
+                    x.Attribute.Condition != NetworkObject.OwnerOnly || obj.OwnerId == peer.Id)
+                .Select(x => new NetMember(obj.Id, x.Id, x.GetValue(obj)))
+                .Where(x => x.Value != null!).ToArray() ?? Array.Empty<NetMember>();
+
+            writer.Put((ushort)members.Length);
+            foreach (var member in members)
+            {
+                writer.Put(member);
+            }
+        }
+
+        peer.Send(writer, (byte)Channel.AllObjects, DeliveryMethod.ReliableOrdered);
+    }
+
     internal void SpawnWithInit(NetworkObject networkObject, NetPeer? owner)
     {
         InitNetworkObject(networkObject, owner);
-        NetworkManager.AddNetworkObject(networkObject);
         SpawnToAll(networkObject);
+        NetworkManager.AddNetworkObject(networkObject);
+        NetworkManager.InvokeNetworkObjectSpawn(networkObject);
     }
 
     internal void Destroy(NetworkObject networkObject, NetPeer? excludePeer = null)

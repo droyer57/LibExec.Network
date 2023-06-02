@@ -35,13 +35,11 @@ internal sealed class ReplicateCodeGenerator : CodeGenerator
                     instruction.OpCode == OpCodes.Stfld)
                 {
                     Execute(field, field.FieldType, ilProcessor);
-                    break;
                 }
 
                 if (instruction.Operand is MethodDefinition item && _propertiesMethods.TryGetValue(item, out var prop))
                 {
                     Execute(prop, prop.PropertyType, ilProcessor);
-                    break;
                 }
             }
         }

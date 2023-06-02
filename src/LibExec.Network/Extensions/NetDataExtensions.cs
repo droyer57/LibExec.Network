@@ -41,13 +41,23 @@ public static class NetDataExtensions
         { typeof(IPEndPoint), reader => reader.GetNetEndPoint() }
     };
 
+    private static NetworkManager NetworkManager => NetworkManager.Instance;
+
     public static void Put(this NetDataWriter writer, Type type, object value)
     {
+        if (!NetWriterActions.ContainsKey(type))
+        {
+            writer.Put(((NetworkObject)value).Id);
+            return;
+        }
+
         NetWriterActions[type].Invoke(writer, value);
     }
 
     public static object Get(this NetDataReader reader, Type type)
     {
-        return NetReaderActions[type].Invoke(reader);
+        return !NetWriterActions.ContainsKey(type)
+            ? NetworkManager.NetworkObjects[reader.GetUInt()]
+            : NetReaderActions[type].Invoke(reader);
     }
 }

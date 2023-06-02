@@ -6,6 +6,8 @@ namespace Sandbox;
 
 public sealed class GameManager : NetworkObject
 {
+    [Replicate] private Weapon? _weapon;
+
     public void Draw()
     {
         ImGui.Begin("Game Manager");
@@ -18,7 +20,22 @@ public sealed class GameManager : NetworkObject
             ImGui.SameLine();
         }
 
+        ImGui.NewLine();
+        Gui.Button("Spawn weapon", SpawnWeaponServer);
+
+        if (_weapon?.IsValid == true)
+        {
+            _weapon.Draw();
+        }
+
         ImGui.End();
+    }
+
+    [Server]
+    private void SpawnWeaponServer()
+    {
+        _weapon = new Weapon();
+        _weapon.Spawn();
     }
 
     [Server]

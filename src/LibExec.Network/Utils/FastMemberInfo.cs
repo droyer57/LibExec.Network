@@ -42,11 +42,11 @@ internal sealed class FastMemberInfo
         return _getter.Invoke(instance);
     }
 
-    public void SetValue(NetworkObject instance, object value)
+    public void SetValue(NetworkObject instance, object? value)
     {
         var oldValue = _oldValues.GetValueOrDefault(instance);
 
-        if (!value.Equals(oldValue))
+        if (value != null && !value.Equals(oldValue))
         {
             _setter.Invoke(instance, value);
             _onChange?.Invoke(instance, oldValue!);
@@ -54,7 +54,7 @@ internal sealed class FastMemberInfo
         }
     }
 
-    public void SetValue(NetworkObject instance, object value, out object oldValue)
+    public void SetValue(NetworkObject instance, object? value, out object oldValue)
     {
         oldValue = _oldValues.GetValueOrDefault(instance)!;
         SetValue(instance, value);

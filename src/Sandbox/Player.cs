@@ -15,6 +15,8 @@ public sealed class Player : NetworkObject
     [Replicate(SkipOwner)] private string _text = string.Empty;
     private int _timerCount;
 
+    [Replicate] private Weapon? _weapon;
+
     public Player()
     {
         _timer.Elapsed += TimerOnElapsed;
@@ -38,6 +40,12 @@ public sealed class Player : NetworkObject
             _pseudo = Sandbox.Pseudo.Trim();
             SetPseudoServer(_pseudo);
         }
+
+        if (NetworkManager.IsServer)
+        {
+            _weapon = new Weapon();
+            _weapon.Spawn(Owner);
+        }
     }
 
     public void Draw()
@@ -56,6 +64,11 @@ public sealed class Player : NetworkObject
         ImGui.PopItemWidth();
         ImGui.EndDisabled();
         Gui.Button("Ping", PingServer, enabled: !IsOwner);
+        if (_weapon?.IsValid == true)
+        {
+            _weapon.Draw();
+        }
+
         Gui.Button("Disconnect", () => Owner!.Disconnect(), enabled: NetworkManager.IsServer || IsOwner);
 
         ImGui.End();

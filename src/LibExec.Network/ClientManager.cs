@@ -54,12 +54,14 @@ public sealed class ClientManager : ManagerBase
             instance.Owner = Connection;
         }
 
+        NetworkManager.AddNetworkObject(instance);
+
         foreach (var member in packet.Members)
         {
             NetworkManager.MemberInfos[member.Id].SetValue(instance, member.Value);
         }
 
-        NetworkManager.AddNetworkObject(instance);
+        NetworkManager.InvokeNetworkObjectSpawn(instance);
     }
 
     private void OnDestroyNetworkObject(DestroyNetworkObjectPacket packet)
@@ -83,5 +85,31 @@ public sealed class ClientManager : ManagerBase
     {
         var instance = NetworkManager.NetworkObjects[packet.Member.NetworkObjectId];
         NetworkManager.MemberInfos[packet.Member.Id].SetValue(instance, packet.Member.Value);
+    }
+
+    internal void OnReceiveAllObjects(NetPacketReader reader)
+    {
+        var networkObjectsCount = reader.GetUShort();
+        for (var i = 0; i < networkObjectsCount; i++)
+        {
+            var classId = reader.GetUShort();
+            var id = reader.GetUInt();
+
+            var instance = NetworkManager.CreateNetworkObject(classId);
+            instance.Id = id;
+            NetworkManager.AddNetworkObject(instance);
+        }
+
+        foreach (var obj in NetworkManager.NetworkObjects.Values)
+        {
+            var members = new NetMember[reader.GetUShort()];
+            for (var i = 0; i < members.Length; i++)
+            {
+                members[i] = reader.Get<NetMember>();
+                NetworkManager.MemberInfos[members[i].Id].SetValue(obj, members[i].Value);
+            }
+
+            NetworkManager.InvokeNetworkObjectSpawn(obj);
+        }
     }
 }

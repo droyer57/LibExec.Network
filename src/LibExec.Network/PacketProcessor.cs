@@ -17,6 +17,15 @@ internal sealed class PacketProcessor
         _packetTypes = new BiDictionary<Type>(Reflection.PacketTypes);
     }
 
+    public NetDataWriter Writer
+    {
+        get
+        {
+            _writer.Reset();
+            return _writer;
+        }
+    }
+
     private Dictionary<Type, RegisterDelegate> GetCallbacks(bool asServer)
     {
         return asServer ? _serverCallbacks : _clientCallbacks;

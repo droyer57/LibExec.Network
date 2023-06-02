@@ -5,6 +5,8 @@ public abstract class NetworkObject
     public const int OwnerOnly = 1;
     public const int SkipOwner = 2;
 
+    private UpdateMemberData? _updateMemberData;
+
     public uint Id { get; internal set; }
     internal int OwnerId { get; set; }
     public bool IsOwner => ClientManager.IsLocalPeerId(OwnerId);
@@ -21,6 +23,11 @@ public abstract class NetworkObject
     {
         NetworkManager.EnsureMethodIsCalledByServer();
         ServerManager.SpawnWithInit(this, owner?.Peer);
+
+        if (_updateMemberData != null)
+        {
+            SendMember(_updateMemberData);
+        }
     }
 
     public void Destroy()
@@ -56,19 +63,37 @@ public abstract class NetworkObject
         var memberInfo = NetworkManager.MemberInfos[memberId];
         memberInfo.SetValue(this, newValue, out var oldValue);
 
-        if (!NetworkManager.IsServer || !IsValid || newValue == oldValue) return;
+        if (!NetworkManager.IsServer || newValue == oldValue) return;
 
-        var packet = new UpdateMemberPacket(new NetMember(Id, memberId, newValue));
-        var attribute = memberInfo.Attribute;
+        if (newValue is NetworkObject { IsValid: false } networkObject)
+        {
+            networkObject._updateMemberData = GetMemberData(memberId, newValue);
+            return;
+        }
 
-        if (attribute.Condition == OwnerOnly)
+        if (!IsValid) return;
+
+        SendMember(GetMemberData(memberId, newValue));
+    }
+
+    private void SendMember(UpdateMemberData data)
+    {
+        var packet = new UpdateMemberPacket(new NetMember(data.InstanceId, data.MemberId, data.Value));
+
+        if (data.Attribute.Condition == OwnerOnly)
         {
             Owner!.SendPacket(packet, excludeLocalConnection: true);
         }
         else
         {
-            var excludeConnection = attribute.Condition == SkipOwner ? Owner : null;
+            var excludeConnection = data.Attribute.Condition == SkipOwner ? Owner : null;
             ServerManager.SendPacketToAll(packet, excludeLocalConnection: true, excludeConnection: excludeConnection);
         }
+    }
+
+    private UpdateMemberData GetMemberData(ushort memberId, object newValue)
+    {
+        var memberInfo = NetworkManager.MemberInfos[memberId];
+        return new UpdateMemberData(Id, memberId, newValue, memberInfo.Attribute);
     }
 }
