@@ -229,6 +229,12 @@ public sealed class ImGuiRenderer
         _scrollWheelValue = mouse.ScrollWheelValue;
         _horizontalScrollWheelValue = mouse.HorizontalScrollWheelValue;
 
+        io.AddKeyEvent(ImGuiKey.ModShift, keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift));
+        io.AddKeyEvent(ImGuiKey.ModCtrl, keyboard.IsKeyDown(Keys.LeftControl) || keyboard.IsKeyDown(Keys.RightControl));
+        io.AddKeyEvent(ImGuiKey.ModAlt, keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt));
+        io.AddKeyEvent(ImGuiKey.ModSuper,
+            keyboard.IsKeyDown(Keys.LeftWindows) || keyboard.IsKeyDown(Keys.RightWindows));
+
         foreach (var key in _allKeys)
         {
             if (TryMapKeys(key, out var imguikey))
@@ -283,9 +289,6 @@ public sealed class ImGuiRenderer
             >= Keys.F1 and <= Keys.F12 => ImGuiKey.F1 + (key - Keys.F1),
             Keys.NumLock => ImGuiKey.NumLock,
             Keys.Scroll => ImGuiKey.ScrollLock,
-            Keys.LeftShift or Keys.RightShift => ImGuiKey.ModShift,
-            Keys.LeftControl or Keys.RightControl => ImGuiKey.ModCtrl,
-            Keys.LeftAlt or Keys.RightAlt => ImGuiKey.ModAlt,
             Keys.OemSemicolon => ImGuiKey.Semicolon,
             Keys.OemPlus => ImGuiKey.Equal,
             Keys.OemComma => ImGuiKey.Comma,
